@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+data/*.db
+data/*.db-*
+.env
+*.log
+*.zip
+*.tar.gz
+buzzwire-vercel-correct/
+buzzwire-vercel-simple/

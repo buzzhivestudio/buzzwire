@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BuzzWire</title>
+    <link rel="icon" href="/static/assets/buzzwire-logo.png" />
+    <link rel="stylesheet" href="/static/styles.css?v=card-actions-v1" />
+  </head>
+  <body>
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <main class="app-shell">
+      <header class="app-header">
+        <div class="brand">
+          <img class="brand-logo" src="/static/assets/buzzwire-logo.png" alt="BuzzWire logo" />
+          <div>
+            <h1>BuzzWire</h1>
+            <p>Narrative production OS</p>
+          </div>
+        </div>
+
+        <div class="header-controls">
+          <select id="page-filter" class="page-select" aria-label="Select page">
+            <option value="all">All Pages</option>
+          </select>
+          <button id="settings-open" class="ghost-button" type="button">Settings</button>
+        </div>
+      </header>
+
+      <section class="command-bar" aria-label="BuzzWire controls">
+        <div class="action-group">
+          <button id="fetch-rss" class="primary-button" type="button">Fetch Automatically</button>
+          <button id="manual-toggle" class="secondary-button" type="button">Add Manually</button>
+          <button id="good-only" class="secondary-button" type="button" aria-pressed="false">Good Ideas Only</button>
+        </div>
+        <div class="utility-group">
+          <a class="utility-link" href="/api/export/markdown" target="_blank" rel="noreferrer">Markdown</a>
+          <a class="utility-link" href="/api/export/json" target="_blank" rel="noreferrer">JSON</a>
+          <button id="refresh" class="ghost-button" type="button">Refresh</button>
+        </div>
+      </section>
+
+      <form id="manual-form" class="manual-drawer" hidden>
+        <div class="drawer-grid">
+          <label>
+            Topic
+            <input id="topic-title" name="title" placeholder="Google expands AI hiring" required />
+          </label>
+          <label>
+            Source URL
+            <input id="topic-url" name="source_url" placeholder="https://..." />
+          </label>
+          <label class="wide-field">
+            What happened?
+            <textarea id="topic-summary" name="summary" rows="3" placeholder="Short source summary"></textarea>
+          </label>
+          <label>
+            Topic hints
+            <input id="topic-niche" name="niche_hint" placeholder="AI, jobs, India" />
+          </label>
+          <button class="primary-button drawer-submit" type="submit">Generate Ideas</button>
+        </div>
+      </form>
+
+      <section class="board-head">
+        <div>
+          <h2>Production Board</h2>
+          <p id="board-counts">Loading board...</p>
+        </div>
+        <div id="status" class="status" role="status"></div>
+      </section>
+
+      <section id="board" class="board" aria-label="BuzzWire workflow board"></section>
+    </main>
+
+    <div id="detail-modal" class="modal" hidden>
+      <div class="modal-backdrop" data-close-modal="detail"></div>
+      <article class="modal-panel detail-panel" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+        <div id="detail-content"></div>
+      </article>
+    </div>
+
+    <div id="settings-modal" class="modal" hidden>
+      <div class="modal-backdrop" data-close-modal="settings"></div>
+      <article class="modal-panel settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="settings-header">
+          <div>
+            <h2 id="settings-title">Page Settings</h2>
+            <p>Each page is a configurable AI personality.</p>
+          </div>
+          <div class="modal-header-actions">
+            <button id="new-profile" class="secondary-button" type="button">Add New Page +</button>
+            <button id="copy-profile" class="secondary-button" type="button">Copy Settings</button>
+            <button class="close-button" type="button" data-close-modal="settings">Close</button>
+          </div>
+        </div>
+
+        <div class="settings-layout">
+          <aside class="profile-list">
+            <label>
+              Page
+              <select id="profile-picker"></select>
+            </label>
+          </aside>
+
+          <form id="profile-form" class="profile-form">
+            <input id="profile-id" name="id" type="hidden" />
+            <label>
+              Page name
+              <input name="page_name" required />
+            </label>
+            <label>
+              Username
+              <input name="username" placeholder="@hersignals" />
+            </label>
+            <label>
+              Niche
+              <input name="niche" placeholder="business, AI, jobs" />
+            </label>
+            <label>
+              Audience
+              <textarea name="audience" rows="2"></textarea>
+            </label>
+            <label>
+              Emotional drivers
+              <input name="emotional_drivers" placeholder="ambition, fear, curiosity" />
+            </label>
+            <label>
+              Allowed topics
+              <input name="allowed_topics" placeholder="AI, jobs, money" />
+            </label>
+            <label>
+              Blocked topics
+              <input name="blocked_topics" placeholder="party politics, graphic crime" />
+            </label>
+            <label>
+              Preferred sources
+              <input name="preferred_sources" placeholder="Reuters, TechCrunch, Economic Times" />
+            </label>
+            <label>
+              Country focus
+              <input name="country_focus" placeholder="Global or India" />
+            </label>
+            <label>
+              Tone style
+              <textarea name="tone_rules" rows="2"></textarea>
+            </label>
+            <label>
+              Headline style
+              <input name="headline_style" />
+            </label>
+            <label>
+              Caption style
+              <textarea name="caption_style" rows="2"></textarea>
+            </label>
+            <label>
+              Visual style
+              <textarea name="visual_style" rows="2"></textarea>
+            </label>
+            <label>
+              Risk tolerance
+              <select name="risk_tolerance">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <button class="primary-button form-submit" type="submit">Save Page</button>
+          </form>
+        </div>
+      </article>
+    </div>
+
+    <script src="/static/app.js?v=detail-news-v1"></script>
+  </body>
+</html>

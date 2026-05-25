@@ -1,0 +1,32 @@
+[
+  {
+    "name": "BBC Business",
+    "niche": "business",
+    "url": "https://feeds.bbci.co.uk/news/business/rss.xml",
+    "enabled": true
+  },
+  {
+    "name": "BBC Technology",
+    "niche": "AI, technology",
+    "url": "https://feeds.bbci.co.uk/news/technology/rss.xml",
+    "enabled": true
+  },
+  {
+    "name": "The Hindu National",
+    "niche": "India, national",
+    "url": "https://www.thehindu.com/news/national/feeder/default.rss",
+    "enabled": true
+  },
+  {
+    "name": "Economic Times Tech",
+    "niche": "India, technology, startups",
+    "url": "https://economictimes.indiatimes.com/tech/rssfeeds/13357270.cms",
+    "enabled": true
+  },
+  {
+    "name": "Vogue",
+    "niche": "women, lifestyle, beauty",
+    "url": "https://www.vogue.com/feed/rss",
+    "enabled": false
+  }
+]
