@@ -29,6 +29,7 @@ let lastBoard = null;
 let selectedPage = "all";
 let goodOnly = false;
 let activeDetail = null;
+let mobileOpenColumn = "";
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message || "";
@@ -324,21 +325,27 @@ function filterItems(kind, items) {
 
 function renderBoard() {
   if (!lastBoard) return;
+  const isMobileBoard = window.matchMedia("(max-width: 720px)").matches;
   const total = columns.reduce((sum, [key]) => sum + (lastBoard[key] || []).length, 0);
   countsEl.textContent = `${total} items across ${profiles.length} pages`;
 
   boardEl.innerHTML = columns.map(([key, title]) => {
     const items = filterItems(key, lastBoard[key] || []);
+    const isOpen = !isMobileBoard || mobileOpenColumn === key;
+    const columnId = `column-cards-${key}`;
     const cards = items.length
       ? items.map((item, index) => compactCard(key, item, index)).join("")
       : `<p class="empty">No items</p>`;
     return `
-      <section class="board-column">
-        <div class="column-header">
-          <h2>${esc(title)}</h2>
-          <span>${items.length}</span>
-        </div>
-        <div class="column-cards">${cards}</div>
+      <section class="board-column ${isOpen ? "is-open" : "is-collapsed"}" data-column="${esc(key)}">
+        <button class="column-header" type="button" data-column-toggle="${esc(key)}" aria-expanded="${isOpen ? "true" : "false"}" aria-controls="${esc(columnId)}">
+          <span class="column-title">${esc(title)}</span>
+          <span class="column-meta">
+            <span class="column-count">${items.length}</span>
+            <span class="column-caret" aria-hidden="true"></span>
+          </span>
+        </button>
+        <div id="${esc(columnId)}" class="column-cards">${cards}</div>
       </section>
     `;
   }).join("");
@@ -685,6 +692,17 @@ document.querySelector("#refresh").addEventListener("click", async () => {
 });
 
 boardEl.addEventListener("click", async (event) => {
+  const columnToggle = event.target.closest("[data-column-toggle]");
+  if (columnToggle) {
+    const key = columnToggle.dataset.columnToggle;
+    const isMobile = window.matchMedia("(max-width: 720px)").matches;
+    if (isMobile) {
+      mobileOpenColumn = mobileOpenColumn === key ? "" : key;
+      renderBoard();
+    }
+    return;
+  }
+
   const button = event.target.closest("[data-action]");
   if (button) {
     const { action, kind, id } = button.dataset;
