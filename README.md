@@ -104,6 +104,36 @@ Mount the persistent disk or volume at `/data` so the board survives redeploys.
 - `GET /api/export/json`
 - `GET /api/export/markdown`
 
+## Instagram Training Lab
+
+Use `scripts/instagram_training_lab.py` to turn public reference posts into private pattern analysis for BuzzWire. Keep downloaded media in `data/training/`, which is ignored by Git.
+
+Create a CSV with:
+
+```csv
+post_url,likes,views,hook_text,caption,frame_path,media_path
+https://www.instagram.com/p/...,871K,54.9M,Unlocking a number lock should not be this easy,,
+```
+
+Run analysis only:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\instagram_training_lab.py data\training\wealth_posts.csv --out data\training\wealth --sort-by views
+```
+
+Run with local download/frame extraction when you have permission to use the posts as private reference material:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\instagram_training_lab.py data\training\wealth_posts.csv --out data\training\wealth --sort-by views --download --cookies-browser chrome
+```
+
+Outputs:
+
+- `contact_sheet_by_views.html` or `contact_sheet_by_likes.html`
+- `training_summary.md`
+- `pattern_analysis.json`
+- `training_examples.json`
+
 ## Provider Layer
 
 `BUZZWIRE_MODEL_PROVIDER=rule_based` is the working default and needs no API key.
