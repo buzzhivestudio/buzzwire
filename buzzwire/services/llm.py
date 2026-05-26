@@ -36,6 +36,14 @@ GENERIC_TITLE_PHRASES = {
     "ai race ceos should be watching",
     "this story is bigger",
     "this could change everything",
+    "getting so much attention",
+    "bigger creator story",
+    "bigger culture story",
+    "world story people should watch",
+    "normal headline",
+    "worth watching",
+    "real angle",
+    "business signal",
 }
 
 
@@ -188,12 +196,14 @@ def _prompt_for_angle(
         style_training_notes = (
             "Use SuccessAddictives/Pubity/@wealth-style concrete hooks: exact names, numbers, dates, public creator moves, "
             "celebrity career milestones, money/status signals, rankings, first-ever claims, and visual facts. "
+            "Every viral_title must contain a concrete anchor from the source: a person, company, number, date, product, place, "
+            "money figure, public milestone, or surprising comparison. Prefer direct factual feed hooks over abstract analysis. "
             "Good examples: 'PEWDIEPIE AND MARZIA WILL END THEIR FAMILY VLOGS TO PROTECT THEIR SON'S PRIVACY', "
             "'ELON MUSK WILL LIKELY BECOME THE WORLD'S FIRST TRILLIONAIRE THIS YEAR', 'WHEN DID THE WORLD LOSE ITS COLOR', "
             "'THE RICHEST PEOPLE TO HAVE EVER LIVED', '2027 IS ALREADY SHAPING UP TO BE A MASSIVE YEAR FOR MOVIES', "
             "'THE ENTIRE WORLD IS NOW $345 TRILLION IN DEBT'. Avoid generic titles like 'this story is bigger than it looks', "
-            "'story gets bigger', 'the real angle here', or vague AI/business placeholders. Avoid cheap celebrity gossip; frame public "
-            "creator/celebrity stories as career, privacy, money, legacy, or culture signals."
+            "'story gets bigger', 'the real angle here', 'getting attention', 'worth watching', or vague AI/business placeholders. "
+            "Avoid cheap celebrity gossip; frame public creator/celebrity stories as career, privacy, money, legacy, or culture signals."
         )
     elif profile.get("page_name") == "CEOBeingCEO":
         style_training_notes = (

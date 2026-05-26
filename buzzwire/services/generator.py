@@ -32,7 +32,7 @@ COMMON_TITLE_WORDS = {
     "Those",
 }
 
-WEAK_ACTORS = {"new", "news", "story", "this", "that", "us", "uk"}
+WEAK_ACTORS = {"new", "news", "story", "this", "that", "us", "uk", "next"}
 
 SUCCESS_EXPLAINER_CATEGORIES = {"engineering", "visual_explainer", "innovation", "infrastructure"}
 SUCCESS_EXPLAINER_TERMS = {
@@ -268,6 +268,8 @@ def _success_wealth_subject(raw_title: str, actor: str) -> str:
         ("taylor swift", "Taylor Swift"),
         ("rihanna", "Rihanna"),
         ("beyonce", "Beyonce"),
+        ("celebrity dating", "This Celebrity Rumor"),
+        ("celebrity", "This Celebrity Moment"),
         ("emmy", "The Emmy Win"),
         ("oscar", "The Oscars Story"),
         ("hollywood", "Hollywood"),
@@ -347,6 +349,41 @@ def _success_wealth_frame(raw_title: str, classification: dict[str, Any]) -> str
     return "curiosity"
 
 
+def _wealth_hook_is_strong(title: str) -> bool:
+    text = title.lower()
+    if len(title.split()) < 4:
+        return False
+    if re.search(r"[$]?\d[\d,.]*(?:\s*(?:%|percent|million|billion|trillion|years?|minutes?|hours?|days?))?", text):
+        return True
+    if re.search(
+        r"\b(first|first-ever|first time|most|richest|biggest|longest|highest|best|insane|special|hardest|"
+        r"powerful|officially|confirmed|confirms|named|spent|built|found|stole|launch|will launch|"
+        r"became|become|ending|will end|returns|tried|never went back|far more|when did)\b",
+        text,
+    ):
+        return True
+    if any(term in text for term in ["before and after", "used to", "no longer", "privacy", "fortune", "trillionaire"]):
+        return True
+    source_names = [
+        "pewdiepie",
+        "mrbeast",
+        "drake",
+        "michael jackson",
+        "taylor swift",
+        "elon musk",
+        "ronaldo",
+        "messi",
+        "gta",
+        "iphone",
+        "ferrari",
+        "world cup",
+        "olympics",
+        "the boys",
+        "game of thrones",
+    ]
+    return any(name in text for name in source_names) and re.search(r"\b(will|is|are|has|have|became|become|end|launch|spent|made|named)\b", text) is not None
+
+
 def _wealth_source_hook(raw_title: str) -> str:
     title = clean_text(raw_title).strip(" .,:;-")
     if not title:
@@ -358,6 +395,8 @@ def _wealth_source_hook(raw_title: str) -> str:
     title = re.sub(r"\s+", " ", title)
     if len(title) > 105:
         title = title[:105].rsplit(" ", 1)[0].strip(" .,:;-")
+    if not _wealth_hook_is_strong(title):
+        return ""
     return title_case_soft(title)
 
 
@@ -960,6 +999,70 @@ def _specific_success_title(
                 variant_hint,
             ),
         )
+    if ("entry-level" in text or "entry level" in text or "graduate job" in text) and "job" in text:
+        subject = _business_subject(actor, raw_title, "Workforce")
+        return (
+            _rotate(
+                [
+                    f"{subject} Are Disappearing Faster Than Graduates Think",
+                    "The First Career Step Is Getting Harder To Reach",
+                    "Bosses Are Warning That Entry-Level Jobs Could Collapse",
+                ],
+                variant_hint,
+            ),
+            _rotate(
+                [
+                    "Why The First Career Step Is Becoming A Survival Test",
+                    "The Career Ladder Is Breaking At The Bottom",
+                    f"What The {subject} Squeeze Means For Young Workers",
+                ],
+                variant_hint,
+            ),
+        )
+    if ("ai hiring" in text or "ai engineers" in text or ("hiring" in text and "ai" in text)) and "google" in text:
+        return (
+            _rotate(
+                [
+                    "Google Is Quietly Staffing Up For The AI Work Shift",
+                    "Google's AI Hiring Push Shows Where Work Is Moving",
+                    "Google Is Building The Team Behind The Next Work Shift",
+                ],
+                variant_hint,
+            ),
+            _rotate(
+                [
+                    "Why Google's AI Hiring Push Matters For Your Career",
+                    "The Career Signal Inside Google's AI Hiring Push",
+                    "What Google's AI Hiring Says About White-Collar Work",
+                ],
+                variant_hint,
+            ),
+        )
+    if "api tools" in text or "ai agents" in text:
+        if "openai" in text:
+            owner = "OpenAI"
+        elif "microsoft" in text:
+            owner = "Microsoft"
+        else:
+            owner = actor if actor.lower() not in WEAK_ACTORS else "Big Tech"
+        return (
+            _rotate(
+                [
+                    f"{_possessive(owner)} AI Agent Tools Could Turn Demos Into Products",
+                    f"{owner} Is Moving AI Agents From Hype To Workflow",
+                    "The AI Agent Race Just Got More Practical",
+                ],
+                variant_hint,
+            ),
+            _rotate(
+                [
+                    "Why AI Agents Are Moving Closer To Real Work",
+                    f"The Product Shift Hidden Inside {_possessive(owner)} AI Tools",
+                    "What AI Agent Tools Mean For Ambitious Builders",
+                ],
+                variant_hint,
+            ),
+        )
     if "generate ip" in text or "engineering hubs" in text:
         return (
             _rotate(
@@ -1148,9 +1251,9 @@ def _success_wealth_titles(
     source_hook = _wealth_source_hook(raw_title)
     if source_hook:
         aggressive_options = [
-            f"Why {subject} Is Getting So Much Attention",
+            f"The Detail Inside {subject} Is The Real Hook",
             f"The Detail That Makes {subject} Hard To Ignore",
-            f"What Makes This {frame.title()} Hook So Shareable",
+            f"Why This {frame.title()} Hook Works So Fast",
         ]
         return source_hook, _rotate(aggressive_options, variant_hint)
 
@@ -1167,53 +1270,60 @@ def _success_wealth_titles(
         ]
     elif re.search(r"\b(richest|biggest|longest|highest|most powerful|most anticipated|most insane|best)\b", text):
         viral_options = [
-            f"The {subject} Story Is Bigger Than It Looks",
-            f"{subject} Is One Of The Wildest {frame.title()} Stories Right Now",
-            f"The {frame.title()} Ranking People Will Stop Scrolling For",
+            f"The {subject} Ranking Is Hard To Ignore",
+            f"{subject} Is The Kind Of {frame.title()} Fact People Save",
+            f"The {frame.title()} List That Explains Why {subject} Matters",
         ]
         aggressive_options = [
-            f"Why {subject} Gets Attention So Fast",
+            f"The Detail That Makes {subject} Feel Unreal",
             f"The Detail That Makes {subject} Hard To Ignore",
-            f"What Makes This {frame.title()} Story So Shareable",
+            f"Why This {frame.title()} Ranking Works So Fast",
         ]
     elif frame == "creator":
-        viral_options = [
-            f"{subject} Just Became A Bigger Creator Story",
-            f"The {subject} Update Everyone Online Will Notice",
-            f"{subject} Is Turning Into A Creator-Economy Signal",
-        ]
+        if "privacy" in text or "family vlog" in text:
+            viral_options = [
+                f"{subject} Just Drew A Line Most Creators Avoid",
+                f"The Creator Privacy Move Around {subject} Feels Bigger Than Gossip",
+                f"{subject} Turned Family Privacy Into A Creator-Economy Lesson",
+            ]
+        else:
+            viral_options = [
+                f"{subject} Just Turned Attention Into A Career Move",
+                f"The {subject} Update Shows How Creator Fame Works Now",
+                f"{subject} Is Becoming A Creator-Economy Case Study",
+            ]
         aggressive_options = [
-            f"Why {subject} Is Getting So Much Attention",
             f"The Creator Detail That Makes {subject} Bigger Than Gossip",
+            f"Why The {subject} Move Hit The Internet So Fast",
             f"What {subject} Says About Fame, Privacy, And Attention",
         ]
     elif frame in {"culture", "viral culture"}:
         viral_options = [
-            f"{subject} Just Became A Bigger Culture Story",
-            f"The {subject} Update Everyone Will Be Talking About",
-            f"{subject} Is Turning Into A Scroll-Stopping Moment",
+            f"{subject} Just Became A Culture Moment",
+            f"The {subject} Detail People Will Keep Reposting",
+            f"{subject} Is The Kind Of Update That Takes Over Feeds",
         ]
         aggressive_options = [
-            f"Why {subject} Is Getting So Much Attention",
             f"The Culture Detail That Makes {subject} Interesting",
-            f"What Makes {subject} A Bigger Story Than It Sounds",
+            f"Why The {subject} Hook Spreads So Fast",
+            f"What Makes {subject} Feel Bigger Than A Normal Update",
         ]
     elif frame == "sports":
         viral_options = [
-            f"{subject} Is Becoming A Massive Sports Story",
+            f"{subject} Is Turning Into A Massive Sports Moment",
             f"The Sports Detail That Makes {subject} Different",
-            f"{subject} Just Got More Interesting",
+            f"{subject} Has The Detail Fans Will Keep Debating",
         ]
         aggressive_options = [
             f"Why {subject} Could Be A Huge Sports Moment",
             f"The Detail Fans Will Notice About {subject}",
-            f"What Makes {subject} More Than A Normal Sports Update",
+            f"What Makes {subject} More Than A Scoreboard Update",
         ]
     elif frame in {"world", "money"}:
         viral_options = [
-            f"{subject} Is A World Story People Should Watch",
-            f"The {frame.title()} Signal Behind {subject}",
-            f"{subject} Is Bigger Than A Normal Headline",
+            f"{subject} Shows How Big The {frame.title()} Shift Is Getting",
+            f"The {frame.title()} Detail Inside {subject} Is Hard To Ignore",
+            f"{subject} Explains Where The World Is Moving",
         ]
         aggressive_options = [
             f"Why {subject} Matters More Than It Sounds",
@@ -1233,14 +1343,14 @@ def _success_wealth_titles(
         ]
     else:
         viral_options = [
-            f"{subject} Is Bigger Than It Looks",
+            f"The Detail Behind {subject} Is Hard To Ignore",
             f"The Detail Behind {subject} Is Wild",
-            f"{subject} Just Became A Scroll-Stopping Story",
+            f"{subject} Has The Kind Of Twist People Save",
         ]
         aggressive_options = [
-            f"Why {subject} Gets Attention So Fast",
+            f"Why The {subject} Hook Works So Fast",
             f"The Hidden Detail Inside {subject}",
-            f"What Makes {subject} Worth Watching",
+            f"The Specific Twist That Makes {subject} Work",
         ]
 
     return _rotate(viral_options, variant_hint), _rotate(aggressive_options, variant_hint)

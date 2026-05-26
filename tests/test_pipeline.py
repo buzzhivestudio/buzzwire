@@ -94,6 +94,12 @@ class PipelineHeuristicsTest(unittest.TestCase):
         self.assertIn("CEOBeingCEO", matched_pages)
         self.assertGreaterEqual(suitability["CEOBeingCEO"], 5.0)
 
+        success_match = next(match for match in matches if match["page_name"] == "SuccessAddictives")
+        payload = build_angle(raw_item, classification, success_match)
+        self.assertIn("Entry-Level Jobs", payload["viral_title"])
+        self.assertIn("Graduates", payload["viral_title"])
+        self.assertNotIn("Next", payload["viral_title"])
+
     def test_successaddictives_gets_visual_engineering_explainers(self) -> None:
         raw_item = {
             "title": "Novel origami pattern turns flat sheets into load-bearing 3D technology",
@@ -188,6 +194,24 @@ class PipelineHeuristicsTest(unittest.TestCase):
         self.assertIn("creator", payload["caption"].lower())
         self.assertIn("privacy", payload["caption"].lower())
 
+    def test_success_weak_culture_titles_avoid_soft_story_language(self) -> None:
+        raw_item = {
+            "title": "Celebrity dating rumor splits fans online",
+            "summary": "Fans reacted to a public celebrity rumor online.",
+            "niche_hint": "celebrities entertainment viral culture",
+        }
+        classification = classify_topic(raw_item)
+        profile = dict(PROFILES[0])
+        profile["match_score"] = 5.0
+
+        payload = build_angle(raw_item, classification, profile)
+        title_lower = payload["viral_title"].lower()
+
+        self.assertIn("Celebrity", payload["viral_title"])
+        self.assertNotIn("story", title_lower)
+        self.assertNotIn("getting so much attention", title_lower)
+        self.assertNotIn("bigger than it looks", title_lower)
+
     def test_title_casing_preserves_common_ai_branding(self) -> None:
         raw_item = {
             "title": "OpenAI launches API tools for AI agents",
@@ -200,6 +224,23 @@ class PipelineHeuristicsTest(unittest.TestCase):
 
         payload = build_angle(raw_item, classification, matches[0])
         self.assertEqual(payload["neutral_title"], "OpenAI Launches API Tools For AI Agents")
+
+    def test_success_ai_agent_titles_are_product_specific(self) -> None:
+        raw_item = {
+            "title": "OpenAI launches API tools for AI agents",
+            "summary": "OpenAI launched new tools for developers building AI agents.",
+            "niche_hint": "AI business",
+        }
+        classification = classify_topic(raw_item)
+        profile = dict(PROFILES[0])
+        profile["match_score"] = 6.0
+
+        payload = build_angle(raw_item, classification, profile)
+
+        self.assertIn("OpenAI", payload["viral_title"])
+        self.assertIn("AI Agent", payload["viral_title"])
+        self.assertTrue("Products" in payload["viral_title"] or "Workflow" in payload["viral_title"])
+        self.assertNotIn("Quiet AI Bet", payload["viral_title"])
 
     def test_india_topic_matches_india_page(self) -> None:
         raw_item = {
