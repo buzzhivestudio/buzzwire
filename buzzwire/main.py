@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import base64
 import os
+import re
 import secrets
 from threading import Lock
 from pathlib import Path
 from typing import Any, Generator
+from urllib.parse import urlsplit
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, Response
@@ -25,6 +27,41 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 _database_lock = Lock()
 _database_ready = False
+
+
+def _masked_database_url() -> str:
+    if not DATABASE_URL:
+        return "not set"
+    parsed = urlsplit(DATABASE_URL)
+    if not parsed.scheme:
+        return "set, but missing URL scheme"
+    host = parsed.hostname or "unknown-host"
+    port = f":{parsed.port}" if parsed.port else ""
+    return f"{parsed.scheme}://{parsed.username or 'user'}:***@{host}{port}{parsed.path or ''}"
+
+
+def _safe_error_message(exc: Exception) -> str:
+    message = str(exc) or exc.__class__.__name__
+    if DATABASE_URL:
+        message = message.replace(DATABASE_URL, "<DATABASE_URL>")
+        parsed = urlsplit(DATABASE_URL)
+        if parsed.password:
+            message = message.replace(parsed.password, "***")
+    message = re.sub(r"://([^:\s/@]+):([^@\s]+)@", r"://\1:***@", message)
+    return message[:800]
+
+
+def _database_error_detail(exc: Exception, phase: str) -> dict[str, str]:
+    return {
+        "message": f"BuzzWire database {phase} failed.",
+        "error_type": exc.__class__.__name__,
+        "error": _safe_error_message(exc),
+        "database_url": _masked_database_url(),
+        "hint": (
+            "Check Vercel Production env vars, Supabase pooler connection string, "
+            "URL-encoded password, and redeploy after every env var change."
+        ),
+    }
 
 
 def _auth_credentials() -> tuple[str, str] | None:
@@ -81,13 +118,13 @@ def ensure_database() -> None:
             try:
                 initialize_database()
             except Exception as exc:
-                print(f"BuzzWire database initialization failed: {type(exc).__name__}")
+                print(
+                    "BuzzWire database initialization failed: "
+                    f"{type(exc).__name__}: {_safe_error_message(exc)}"
+                )
                 raise HTTPException(
                     status_code=500,
-                    detail=(
-                        "BuzzWire database setup failed. Check DATABASE_URL, "
-                        "Supabase password encoding, and Vercel environment variables, then redeploy."
-                    ),
+                    detail=_database_error_detail(exc, "setup"),
                 ) from exc
             _database_ready = True
 
@@ -97,13 +134,13 @@ def get_conn() -> Generator[Any, None, None]:
     try:
         conn = connect(DB_PATH)
     except Exception as exc:
-        print(f"BuzzWire database connection failed: {type(exc).__name__}")
+        print(
+            "BuzzWire database connection failed: "
+            f"{type(exc).__name__}: {_safe_error_message(exc)}"
+        )
         raise HTTPException(
             status_code=500,
-            detail=(
-                "BuzzWire database connection failed. Check DATABASE_URL, "
-                "Supabase password encoding, and Vercel environment variables, then redeploy."
-            ),
+            detail=_database_error_detail(exc, "connection"),
         ) from exc
     try:
         yield conn
@@ -125,10 +162,20 @@ def health() -> dict[str, str]:
 
 
 @app.get("/api/db-health")
-def db_health(conn: Any = Depends(get_conn)) -> dict[str, Any]:
-    profiles = storage.get_profiles(conn)
+def db_health() -> dict[str, Any]:
+    ensure_database()
+    conn = connect(DB_PATH)
+    try:
+        profiles = storage.get_profiles(conn)
+    finally:
+        conn.close()
     db_mode = "postgres" if DATABASE_URL.startswith(("postgres://", "postgresql://")) else "sqlite"
-    return {"status": "ok", "database": db_mode, "profiles": len(profiles)}
+    return {
+        "status": "ok",
+        "database": db_mode,
+        "database_url": _masked_database_url(),
+        "profiles": len(profiles),
+    }
 
 
 @app.get("/api/provider")

@@ -51,9 +51,25 @@ async function request(path, options = {}) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.detail || "Request failed");
+    throw new Error(errorMessage(data.detail) || "Request failed");
   }
   return data;
+}
+
+function errorMessage(detail) {
+  if (!detail) return "";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) return detail.map(errorMessage).filter(Boolean).join(" ");
+  if (typeof detail === "object") {
+    return [
+      detail.message,
+      detail.error_type,
+      detail.error,
+      detail.database_url ? `DB: ${detail.database_url}` : "",
+      detail.hint,
+    ].filter(Boolean).join(" | ");
+  }
+  return String(detail);
 }
 
 function asArray(value) {
