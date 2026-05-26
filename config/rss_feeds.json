@@ -72,6 +72,42 @@
     "enabled": true
   },
   {
+    "name": "ScienceDaily Strange & Offbeat",
+    "niche": "strange facts, visual knowledge, science, animals, places, viral knowledge",
+    "url": "https://www.sciencedaily.com/rss/strange_offbeat.xml",
+    "enabled": true
+  },
+  {
+    "name": "ScienceDaily Most Popular",
+    "niche": "popular science, visual facts, viral knowledge, technology, world",
+    "url": "https://www.sciencedaily.com/rss/most_popular.xml",
+    "enabled": true
+  },
+  {
+    "name": "Smithsonian Smart News",
+    "niche": "history, science, innovation, places, culture, viral knowledge",
+    "url": "https://www.smithsonianmag.com/rss/smart-news/",
+    "enabled": true
+  },
+  {
+    "name": "Smithsonian History",
+    "niche": "history, empires, people, places, culture, visual knowledge",
+    "url": "https://www.smithsonianmag.com/rss/history/",
+    "enabled": true
+  },
+  {
+    "name": "Smithsonian Innovation",
+    "niche": "innovation, technology, design, future tech, visual explainer",
+    "url": "https://www.smithsonianmag.com/rss/innovation/",
+    "enabled": true
+  },
+  {
+    "name": "Space.com",
+    "niche": "space, technology, science, future tech, visual explainer, viral knowledge",
+    "url": "https://www.space.com/feeds/all",
+    "enabled": true
+  },
+  {
     "name": "The Hindu National",
     "niche": "India, national",
     "url": "https://www.thehindu.com/news/national/feeder/default.rss",
