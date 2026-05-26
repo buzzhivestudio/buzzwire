@@ -5,10 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BuzzWire</title>
     <link rel="icon" href="/static/assets/buzzwire-logo.png" />
-    <link rel="stylesheet" href="/static/styles.css?v=mobile-accordion-v1" />
+    <link rel="stylesheet" href="/static/styles.css?v=busy-v1" />
   </head>
   <body>
     <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+    <div id="busy-layer" class="busy-layer" hidden aria-live="polite" aria-busy="false">
+      <article class="busy-card">
+        <p class="busy-kicker">BuzzWire is working</p>
+        <h2 id="busy-title">Processing</h2>
+        <div class="busy-bar" aria-hidden="true"><span></span></div>
+        <p id="busy-detail">Please wait a moment.</p>
+      </article>
+    </div>
 
     <main class="app-shell">
       <header class="app-header">
@@ -173,6 +181,6 @@
       </article>
     </div>
 
-    <script src="/static/app.js?v=mobile-accordion-v1"></script>
+    <script src="/static/app.js?v=busy-v1"></script>
   </body>
 </html>

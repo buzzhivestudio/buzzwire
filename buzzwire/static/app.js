@@ -6,6 +6,9 @@ const manualToggle = document.querySelector("#manual-toggle");
 const pageFilter = document.querySelector("#page-filter");
 const goodOnlyButton = document.querySelector("#good-only");
 const toastStack = document.querySelector("#toast-stack");
+const busyLayer = document.querySelector("#busy-layer");
+const busyTitle = document.querySelector("#busy-title");
+const busyDetail = document.querySelector("#busy-detail");
 const detailModal = document.querySelector("#detail-modal");
 const detailContent = document.querySelector("#detail-content");
 const settingsModal = document.querySelector("#settings-modal");
@@ -30,10 +33,56 @@ let selectedPage = "all";
 let goodOnly = false;
 let activeDetail = null;
 let mobileOpenColumn = "";
+let busyCount = 0;
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message || "";
   statusEl.classList.toggle("error", Boolean(isError));
+}
+
+function nextPaint() {
+  return new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+}
+
+function startBusy(title, detail = "Please wait a moment.", button = null) {
+  busyCount += 1;
+  busyTitle.textContent = title;
+  busyDetail.textContent = detail;
+  busyLayer.hidden = false;
+  busyLayer.setAttribute("aria-busy", "true");
+  document.body.classList.add("is-busy");
+
+  if (button) {
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    button.classList.add("button-loading");
+  }
+
+  return { button };
+}
+
+function stopBusy(token = {}) {
+  if (token.button) {
+    token.button.disabled = false;
+    token.button.removeAttribute("aria-busy");
+    token.button.classList.remove("button-loading");
+  }
+
+  busyCount = Math.max(0, busyCount - 1);
+  if (busyCount) return;
+  busyLayer.hidden = true;
+  busyLayer.setAttribute("aria-busy", "false");
+  document.body.classList.remove("is-busy");
+}
+
+async function withBusy(button, title, detail, task) {
+  const token = startBusy(title, detail, button);
+  try {
+    await nextPaint();
+    return await task();
+  } finally {
+    stopBusy(token);
+  }
 }
 
 function esc(value) {
@@ -333,9 +382,13 @@ function renderBoard() {
     const items = filterItems(key, lastBoard[key] || []);
     const isOpen = !isMobileBoard || mobileOpenColumn === key;
     const columnId = `column-cards-${key}`;
-    const cards = items.length
-      ? items.map((item, index) => compactCard(key, item, index)).join("")
-      : `<p class="empty">No items</p>`;
+    const shouldRenderCards = !isMobileBoard || isOpen;
+    let cards = "";
+    if (shouldRenderCards) {
+      cards = items.length
+        ? items.map((item, index) => compactCard(key, item, index)).join("")
+        : `<p class="empty">No items</p>`;
+    }
     return `
       <section class="board-column ${isOpen ? "is-open" : "is-collapsed"}" data-column="${esc(key)}">
         <button class="column-header" type="button" data-column-toggle="${esc(key)}" aria-expanded="${isOpen ? "true" : "false"}" aria-controls="${esc(columnId)}">
@@ -548,7 +601,7 @@ function openDetail(kind, id) {
   }
 }
 
-async function performPostAction(action, id) {
+async function performPostAction(action, id, button = null) {
   const endpoints = {
     approve: `/api/posts/${id}/approve`,
     reject: `/api/posts/${id}/reject`,
@@ -561,11 +614,14 @@ async function performPostAction(action, id) {
   if (action === "change-tone") {
     body = JSON.stringify({ tone: document.querySelector("#modal-tone")?.value || "balanced" });
   }
-  setStatus("Updating...");
-  await request(endpoints[action], { method: "POST", body });
-  await loadBoard();
-  showToast("BuzzWire Updated", { Status: action.replaceAll("-", " ") });
-  setStatus("Updated.");
+  const label = action.replaceAll("-", " ");
+  await withBusy(button, "Updating card", `Running ${label}...`, async () => {
+    setStatus("Updating...");
+    await request(endpoints[action], { method: "POST", body });
+    await loadBoard();
+    showToast("BuzzWire Updated", { Status: label });
+    setStatus("Updated.");
+  });
 }
 
 manualToggle.addEventListener("click", () => {
@@ -606,89 +662,98 @@ document.addEventListener("click", (event) => {
 
 manualForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const submitButton = event.submitter || manualForm.querySelector("[type='submit']");
   const payload = {
     title: document.querySelector("#topic-title").value,
     summary: document.querySelector("#topic-summary").value,
     source_url: document.querySelector("#topic-url").value,
     niche_hint: document.querySelector("#topic-niche").value,
   };
-  setStatus("Generating ideas...");
-  try {
-    const result = await request("/api/manual-topic", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-    const summary = summarizeScan(result);
-    await loadBoard();
-    showToast("BuzzWire Scan Complete", {
-      Fetched: summary.fetched,
-      Matched: summary.matched,
-      Generated: summary.generated,
-      "High Virality": countHighVirality(summary.generatedIds),
-    });
-    manualForm.reset();
-    manualForm.hidden = true;
-    manualToggle.classList.remove("active");
-    setStatus("Manual story processed.");
-  } catch (error) {
-    setStatus(error.message, true);
-    showToast("Scan Failed", { Error: error.message }, true);
-  }
-});
-
-document.querySelector("#fetch-rss").addEventListener("click", async () => {
-  setStatus("Scanning sources...");
-  try {
-    const result = await request("/api/fetch/rss?limit_per_source=4", { method: "POST" });
-    const summary = summarizeScan(result);
-    await loadBoard();
-    showToast("BuzzWire Scan Complete", {
-      Fetched: summary.fetched,
-      Matched: summary.matched,
-      Generated: summary.generated,
-      "High Virality": countHighVirality(summary.generatedIds),
-    });
-    const sourceError = sourceErrorMessage(result);
-    if (!summary.fetched && sourceError) {
-      showToast("RSS Fetch Blocked", {
-        Sources: result.sources_checked || 0,
-        Error: sourceError,
-      }, true);
-      setStatus(sourceError, true);
-      return;
+  await withBusy(submitButton, "Generating ideas", "Classifying the topic, matching pages, and writing angles...", async () => {
+    setStatus("Generating ideas...");
+    try {
+      const result = await request("/api/manual-topic", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      const summary = summarizeScan(result);
+      await loadBoard();
+      showToast("BuzzWire Scan Complete", {
+        Fetched: summary.fetched,
+        Matched: summary.matched,
+        Generated: summary.generated,
+        "High Virality": countHighVirality(summary.generatedIds),
+      });
+      manualForm.reset();
+      manualForm.hidden = true;
+      manualToggle.classList.remove("active");
+      setStatus("Manual story processed.");
+    } catch (error) {
+      setStatus(error.message, true);
+      showToast("Scan Failed", { Error: error.message }, true);
     }
-    const errors = result.errors?.length ? `${result.errors.length} source errors.` : "";
-    setStatus(errors || "Scan complete.");
-  } catch (error) {
-    setStatus(error.message, true);
-    showToast("Scan Failed", { Error: error.message }, true);
-  }
+  });
 });
 
-document.querySelector("#improve-board").addEventListener("click", async () => {
-  setStatus("Improving ready titles...");
-  try {
-    const result = await request("/api/board/regenerate?limit=100", { method: "POST" });
-    await loadBoard();
-    showToast("Ready Titles Improved", {
-      Updated: result.updated || 0,
-      Errors: result.errors?.length || 0,
-    }, Boolean(result.errors?.length));
-    setStatus(result.errors?.length ? "Some cards could not be regenerated." : "Ready titles improved.");
-  } catch (error) {
-    setStatus(error.message, true);
-    showToast("Improve Failed", { Error: error.message }, true);
-  }
+document.querySelector("#fetch-rss").addEventListener("click", async (event) => {
+  await withBusy(event.currentTarget, "Scanning sources", "Fetching stories, scoring virality, and generating page-specific angles...", async () => {
+    setStatus("Scanning sources...");
+    try {
+      const result = await request("/api/fetch/rss?limit_per_source=4", { method: "POST" });
+      const summary = summarizeScan(result);
+      await loadBoard();
+      showToast("BuzzWire Scan Complete", {
+        Fetched: summary.fetched,
+        Matched: summary.matched,
+        Generated: summary.generated,
+        "High Virality": countHighVirality(summary.generatedIds),
+      });
+      const sourceError = sourceErrorMessage(result);
+      if (!summary.fetched && sourceError) {
+        showToast("RSS Fetch Blocked", {
+          Sources: result.sources_checked || 0,
+          Error: sourceError,
+        }, true);
+        setStatus(sourceError, true);
+        return;
+      }
+      const errors = result.errors?.length ? `${result.errors.length} source errors.` : "";
+      setStatus(errors || "Scan complete.");
+    } catch (error) {
+      setStatus(error.message, true);
+      showToast("Scan Failed", { Error: error.message }, true);
+    }
+  });
 });
 
-document.querySelector("#refresh").addEventListener("click", async () => {
-  setStatus("Refreshing...");
-  try {
-    await loadBoard();
-    setStatus("Board refreshed.");
-  } catch (error) {
-    setStatus(error.message, true);
-  }
+document.querySelector("#improve-board").addEventListener("click", async (event) => {
+  await withBusy(event.currentTarget, "Improving titles", "Rewriting Ready cards into stronger viral hooks...", async () => {
+    setStatus("Improving ready titles...");
+    try {
+      const result = await request("/api/board/regenerate?limit=100", { method: "POST" });
+      await loadBoard();
+      showToast("Ready Titles Improved", {
+        Updated: result.updated || 0,
+        Errors: result.errors?.length || 0,
+      }, Boolean(result.errors?.length));
+      setStatus(result.errors?.length ? "Some cards could not be regenerated." : "Ready titles improved.");
+    } catch (error) {
+      setStatus(error.message, true);
+      showToast("Improve Failed", { Error: error.message }, true);
+    }
+  });
+});
+
+document.querySelector("#refresh").addEventListener("click", async (event) => {
+  await withBusy(event.currentTarget, "Refreshing board", "Loading the latest cards...", async () => {
+    setStatus("Refreshing...");
+    try {
+      await loadBoard();
+      setStatus("Board refreshed.");
+    } catch (error) {
+      setStatus(error.message, true);
+    }
+  });
 });
 
 boardEl.addEventListener("click", async (event) => {
@@ -711,7 +776,7 @@ boardEl.addEventListener("click", async (event) => {
       return;
     }
     try {
-      await performPostAction(action, id);
+      await performPostAction(action, id, button);
     } catch (error) {
       setStatus(error.message, true);
       showToast("Update Failed", { Error: error.message }, true);
@@ -732,7 +797,7 @@ detailContent.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-modal-action]");
   if (!button) return;
   try {
-    await performPostAction(button.dataset.modalAction, button.dataset.id);
+    await performPostAction(button.dataset.modalAction, button.dataset.id, button);
   } catch (error) {
     setStatus(error.message, true);
     showToast("Update Failed", { Error: error.message }, true);
@@ -741,6 +806,7 @@ detailContent.addEventListener("click", async (event) => {
 
 profileForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const submitButton = event.submitter || profileForm.querySelector("[type='submit']");
   const id = profileControl("id").value;
   const payload = {
     page_name: profileControl("page_name").value.trim(),
@@ -758,19 +824,21 @@ profileForm.addEventListener("submit", async (event) => {
     visual_style: profileControl("visual_style").value.trim(),
     risk_tolerance: profileControl("risk_tolerance").value,
   };
-  try {
-    const path = id ? `/api/profiles/${id}` : "/api/profiles";
-    const method = id ? "PUT" : "POST";
-    const result = await request(path, { method, body: JSON.stringify(payload) });
-    await loadProfiles();
-    selectedPage = result.profile.page_name;
-    renderPageSelect();
-    renderBoard();
-    fillProfileForm(result.profile);
-    showToast("Page Saved", { Page: result.profile.page_name });
-  } catch (error) {
-    showToast("Save Failed", { Error: error.message }, true);
-  }
+  await withBusy(submitButton, "Saving page", "Updating this page personality...", async () => {
+    try {
+      const path = id ? `/api/profiles/${id}` : "/api/profiles";
+      const method = id ? "PUT" : "POST";
+      const result = await request(path, { method, body: JSON.stringify(payload) });
+      await loadProfiles();
+      selectedPage = result.profile.page_name;
+      renderPageSelect();
+      renderBoard();
+      fillProfileForm(result.profile);
+      showToast("Page Saved", { Page: result.profile.page_name });
+    } catch (error) {
+      showToast("Save Failed", { Error: error.message }, true);
+    }
+  });
 });
 
 async function boot() {
