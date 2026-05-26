@@ -1009,7 +1009,19 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  html,
+  body {
+    height: auto;
+    min-height: 100%;
+    overflow: auto;
+  }
+
   .app-shell {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
     padding: 10px;
   }
 
@@ -1019,6 +1031,19 @@ textarea {
   .detail-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .brand {
+    min-width: 0;
+  }
+
+  .brand-logo {
+    width: 50px;
+    height: 50px;
+  }
+
+  .brand h1 {
+    font-size: 21px;
   }
 
   .header-controls,
@@ -1032,19 +1057,46 @@ textarea {
   .action-group > *,
   .utility-group > *,
   .detail-actions > * {
-    flex: 1 1 auto;
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
   }
 
   .board {
-    grid-template-columns: repeat(6, minmax(232px, 86vw));
+    grid-template-columns: 1fr;
+    overflow: visible;
+    gap: 10px;
+    padding-bottom: 18px;
+  }
+
+  .board-column {
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .column-cards {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .ticket-card {
+    min-height: auto;
+  }
+
+  .ticket-card h3 {
+    min-height: 0;
+    max-height: none;
   }
 
   .modal {
-    padding: 10px;
+    align-items: stretch;
+    padding: 0;
   }
 
   .modal-panel {
-    max-height: calc(100vh - 20px);
+    width: 100%;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    border-radius: 0;
     padding: 14px;
   }
 
@@ -1060,6 +1112,17 @@ textarea {
 
   .settings-header {
     margin: -14px -14px 0;
+  }
+
+  .detail-score {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .detail-header h2,
+  .settings-header h2 {
+    font-size: 24px;
+    line-height: 1.12;
   }
 }
 
