@@ -164,6 +164,11 @@ def _topic_signal(raw_title: str, classification: dict[str, Any]) -> str:
     text = raw_title.lower()
     checks = [
         ("ipo", "IPO"),
+        ("entry-level jobs", "Entry-Level Jobs"),
+        ("entry level jobs", "Entry-Level Jobs"),
+        ("graduate jobs", "Graduate Jobs"),
+        ("hiring", "Hiring"),
+        ("job", "Workforce"),
         ("smart glasses", "Hardware"),
         ("ai industry", "AI Industry"),
         ("artificial intelligence", "AI"),
@@ -198,6 +203,49 @@ def _topic_signal(raw_title: str, classification: dict[str, Any]) -> str:
     return "Business Signal"
 
 
+def _business_subject(actor: str, raw_title: str, signal: str) -> str:
+    text = raw_title.lower()
+    clean_actor = actor.strip()
+    actor_valid = (
+        bool(clean_actor)
+        and clean_actor.lower() not in WEAK_ACTORS
+        and clean_actor.lower() != signal.lower()
+        and clean_actor.lower() != "ai"
+    )
+    checks = [
+        ("entry-level jobs", "Entry-Level Jobs"),
+        ("entry level jobs", "Entry-Level Jobs"),
+        ("graduate jobs", "Graduate Jobs"),
+        ("generate ip", "AI-Generated IP"),
+        ("engineering hubs", "Engineering Hubs"),
+        ("api tools", "API Tools"),
+        ("ai agents", "AI Agents"),
+        ("ai hiring", "AI Hiring"),
+        ("artificial intelligence engineers", "AI Engineers"),
+        ("smart glasses", "Smart Glasses"),
+        ("union recognition", "Union Recognition"),
+        ("trade deal", "Trade Deal"),
+        ("startup grant", "Startup Grant"),
+        ("record annual loss", "Record Loss"),
+        ("restructuring", "Restructuring"),
+    ]
+    for needle, subject in checks:
+        if needle in text:
+            if actor_valid and subject not in {"Entry-Level Jobs", "Graduate Jobs"} and clean_actor.lower() not in subject.lower():
+                return f"{_possessive(clean_actor)} {subject}"
+            return subject
+
+    if actor_valid:
+        return clean_actor
+
+    title_words = [
+        word
+        for word in title_case_soft(raw_title).split()
+        if word.strip(".,:;!?").lower() not in {"says", "said", "warns", "warned", "new"}
+    ]
+    return " ".join(title_words[:4]).strip(" .,:;-") or signal
+
+
 def _specific_ceo_title(
     actor: str,
     raw_title: str,
@@ -205,6 +253,27 @@ def _specific_ceo_title(
     variant_hint: int,
 ) -> tuple[str, str] | None:
     text = raw_title.lower()
+    if ("entry-level" in text or "entry level" in text or "graduate job" in text) and "job" in text:
+        subject = _business_subject(actor, raw_title, "Workforce")
+        actor_label = actor if actor.lower() not in WEAK_ACTORS else "This Boss"
+        return (
+            _rotate(
+                [
+                    f"{_possessive(actor_label)} Warning Turns {subject} Into A CEO Signal",
+                    f"{subject} Are Becoming A Leadership Problem",
+                    f"The First Career Step Is Turning Into A CEO Test",
+                ],
+                variant_hint,
+            ),
+            _rotate(
+                [
+                    f"Why Leaders Should Watch The {subject} Squeeze",
+                    "The Hiring Lesson Behind This Entry-Level Jobs Warning",
+                    "What CEOs Should Learn From The Shrinking Job Ladder",
+                ],
+                variant_hint,
+            ),
+        )
     if "spacex" in text and "ipo" in text:
         return (
             _rotate(
@@ -601,19 +670,20 @@ def _success_titles(actor: str, topic: str, raw_title: str, classification: dict
 
     success_topic = _headline_topic("business" if topic == "India" else topic, india_default="Business")
     if actor.lower() == success_topic.lower():
+        subject = _business_subject(actor, raw_title, success_topic)
         viral = _rotate(
             [
-                f"The {success_topic} Race Is Moving Fast",
-                f"{success_topic} Is Moving Deeper Into Work",
-                f"The {success_topic} Shift Workers Should Watch",
+                f"{subject} Is Moving Faster Than Workers Think",
+                f"The {success_topic} Shift Around {subject} Is Getting Real",
+                f"{subject} Could Change How People Build Careers",
             ],
             variant_hint,
         )
         aggressive = _rotate(
             [
-                f"Why Workers Should Watch The {success_topic} Race",
-                f"The {success_topic} Race Is Getting Serious",
-                f"What The {success_topic} Shift Means For Your Career",
+                f"Why Workers Should Watch {subject}",
+                f"The {success_topic} Race Around {subject} Is Getting Serious",
+                f"What {subject} Means For Your Career",
             ],
             variant_hint,
         )
@@ -669,15 +739,16 @@ def _ceo_titles(actor: str, raw_title: str, classification: dict[str, Any], vari
             f"What Founders Should Learn From {clean_actor}",
         ]
     elif signal in {"AI", "AI Industry", "Hardware", "Innovation", "Talent"}:
+        subject = _business_subject(clean_actor, raw_title, signal)
         viral_options = [
-            f"{clean_actor} Is Quietly Turning Into A Boardroom Advantage",
-            f"The {signal} Race CEOs Should Be Watching",
-            f"{clean_actor} Shows Where The Next Business Edge Is Forming",
+            f"{subject} Is Quietly Turning Into A Boardroom Advantage",
+            f"The {signal} Race Around {subject} Is Heating Up",
+            f"{subject} Shows Where The Next Business Edge Is Forming",
         ]
         aggressive_options = [
             f"Why Leaders Cannot Ignore This {signal} Shift",
-            f"The CEO Lesson Hidden In This {signal} Move",
-            f"What This {signal} Race Means For Ambitious Operators",
+            f"The CEO Lesson Hidden In {subject}",
+            f"What {subject} Means For Ambitious Operators",
         ]
     elif signal in {"Labor", "Pricing", "Platform Risk", "Trade Deal", "Funding", "Startup Funding"}:
         viral_options = [
@@ -856,10 +927,11 @@ def _caption(
 
     if page_name == "SuccessAddictives":
         success_topic = "business" if topic == "India" else topic
+        subject = _business_subject(actor, raw_item.get("title", ""), _topic_signal(raw_item.get("title", ""), classification))
         return (
-            f"{source_sentence} The bigger story is not just the headline; it is what this signals about leverage, "
+            f"{source_sentence} The bigger story is not just the headline; it is what {subject} signals about leverage, "
             f"skills, and the future of work. {actor} is part of a wider {success_topic} race where companies are trying to "
-            f"move faster with fewer limits. {tone} The question is whether your skillset is ready before this becomes normal."
+            f"move faster with fewer limits. {tone} The question is what skill becomes more valuable if this trend keeps moving."
         )
     if page_name == "IndiaPulse":
         if _is_domestic_politics(classification):
@@ -883,9 +955,10 @@ def _caption(
         )
     if page_name == "CEOBeingCEO":
         signal = _topic_signal(raw_item.get("title", ""), classification)
+        subject = _business_subject(actor, raw_item.get("title", ""), signal)
         return (
-            f"{source_sentence} The CEO angle is the business signal underneath it: {signal.lower()}, execution, leverage, or risk. "
-            f"For ambitious operators, this is not just news; it is a lesson in how leaders read markets before everyone else reacts. "
+            f"{source_sentence} The CEO angle is {subject}: what it says about {signal.lower()}, execution, leverage, or risk. "
+            f"For ambitious operators, this is not just news; it is a lesson in how leaders spot specific market signals before everyone else reacts. "
             f"{tone} The question is what decision a sharper CEO would make after seeing this."
         )
     return (

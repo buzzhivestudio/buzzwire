@@ -268,12 +268,48 @@ def save_generated_post(
 ) -> int:
     existing = conn.execute(
         """
-        SELECT id FROM generated_posts
+        SELECT id, status FROM generated_posts
         WHERE raw_item_id = ? AND page_profile_id = ?
         """,
         (raw_item_id, page_profile_id),
     ).fetchone()
     if existing:
+        if existing["status"] == "generated":
+            conn.execute(
+                """
+                UPDATE generated_posts
+                SET classified_topic_id = ?,
+                    neutral_title = ?,
+                    viral_title = ?,
+                    aggressive_title = ?,
+                    caption = ?,
+                    carousel_text = ?,
+                    visual_direction = ?,
+                    suggested_image_keywords = ?,
+                    image_brief = ?,
+                    risk_notes = ?,
+                    source_url = ?,
+                    confidence_score = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (
+                    classified_topic_id,
+                    payload["neutral_title"],
+                    payload["viral_title"],
+                    payload["aggressive_title"],
+                    payload["caption"],
+                    dumps(payload["carousel_text"]),
+                    payload["visual_direction"],
+                    dumps(payload["suggested_image_keywords"]),
+                    dumps(payload.get("image_brief", {})),
+                    payload["risk_notes"],
+                    payload.get("source_url"),
+                    payload["confidence_score"],
+                    existing["id"],
+                ),
+            )
+            conn.commit()
         return int(existing["id"])
 
     cur = conn.execute(

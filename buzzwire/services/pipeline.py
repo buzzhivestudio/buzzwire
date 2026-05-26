@@ -10,6 +10,12 @@ from buzzwire.services.llm import get_provider
 from buzzwire.services.matcher import match_pages
 
 
+def _variant_seed(raw_item_id: int, raw_item: dict[str, Any], profile: dict[str, Any], variant_hint: int) -> int:
+    fingerprint = f"{raw_item_id}:{profile.get('id', '')}:{raw_item.get('title', '')}"
+    stable = sum((index + 1) * ord(char) for index, char in enumerate(fingerprint))
+    return variant_hint + stable
+
+
 def process_raw_item(
     conn: Any,
     raw_item_id: int,
@@ -31,7 +37,7 @@ def process_raw_item(
             raw_item,
             classification,
             profile,
-            variant_hint=variant_hint,
+            variant_hint=_variant_seed(raw_item_id, raw_item, profile, variant_hint),
             tone_override=tone_override,
         )
         post_id = storage.save_generated_post(

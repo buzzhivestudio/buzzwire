@@ -197,7 +197,37 @@ class PipelineHeuristicsTest(unittest.TestCase):
         payload = build_angle(raw_item, classification, profile)
 
         self.assertNotIn("AI Bet", payload["viral_title"])
-        self.assertIn("AI Race", payload["viral_title"])
+        self.assertIn("IP", payload["viral_title"])
+
+    def test_ceo_ai_titles_are_source_specific_not_repeated(self) -> None:
+        profile = dict(PROFILES[2])
+        profile["match_score"] = 7.0
+        raw_items = [
+            {
+                "title": "AI helping engineering hubs generate IP faster",
+                "summary": "AI tools are helping engineering hubs move faster.",
+                "niche_hint": "AI business",
+            },
+            {
+                "title": "OpenAI launches API tools for AI agents",
+                "summary": "OpenAI launched new tools for developers.",
+                "niche_hint": "AI business",
+            },
+            {
+                "title": "Microsoft says AI agents are changing work",
+                "summary": "Microsoft says agents are becoming part of the workplace.",
+                "niche_hint": "AI jobs",
+            },
+        ]
+        titles = []
+        for raw_item in raw_items:
+            classification = classify_topic(raw_item)
+            titles.append(build_angle(raw_item, classification, profile, variant_hint=4)["viral_title"])
+
+        self.assertEqual(len(set(titles)), len(titles))
+        self.assertNotIn("The AI Race CEOs Should Be Watching", titles)
+        self.assertTrue(any("API Tools" in title for title in titles))
+        self.assertTrue(any("Microsoft" in title for title in titles))
 
     def test_ceo_page_has_specific_titles_not_story_placeholders(self) -> None:
         raw_item = {

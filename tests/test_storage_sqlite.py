@@ -64,6 +64,31 @@ class StorageSqliteTest(unittest.TestCase):
                 self.assertEqual(detail["classified_topic_id"], classification_id)
                 self.assertEqual(detail["carousel_text"], ["Slide 1", "Slide 2"])
                 self.assertEqual(detail["image_brief"], {"mood": "focused"})
+
+                same_post_id = storage.save_generated_post(
+                    conn,
+                    raw_item_id=raw_id,
+                    classified_topic_id=classification_id,
+                    page_profile_id=int(profile["id"]),
+                    payload={
+                        "neutral_title": "Google Expands AI Engineering Hiring",
+                        "viral_title": "Google's AI Hiring Race Is Getting Sharper",
+                        "aggressive_title": "Why Google's AI Hiring Matters For Workers",
+                        "caption": "A refreshed generated caption.",
+                        "carousel_text": ["New Slide"],
+                        "visual_direction": "Updated visual.",
+                        "suggested_image_keywords": ["Google", "AI", "hiring"],
+                        "image_brief": {"mood": "updated"},
+                        "risk_notes": "Low risk.",
+                        "source_url": "https://example.com/google-ai-hiring",
+                        "confidence_score": 8.8,
+                    },
+                )
+
+                refreshed = storage.get_generated_post_detail(conn, same_post_id)
+                self.assertEqual(same_post_id, post_id)
+                self.assertEqual(refreshed["viral_title"], "Google's AI Hiring Race Is Getting Sharper")
+                self.assertEqual(refreshed["caption"], "A refreshed generated caption.")
             finally:
                 conn.close()
 
