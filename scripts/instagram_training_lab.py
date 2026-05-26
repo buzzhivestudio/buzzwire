@@ -8,6 +8,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -66,6 +67,8 @@ def clean_hook_text(value: str) -> str:
     quote_match = re.search(r'text that says\s+[\"“](.*?)[\"”]', text, re.I)
     if quote_match:
         text = quote_match.group(1)
+    elif re.match(r"photo by\b", text, re.I):
+        text = ""
     text = re.sub(r"\b(?:wealth|nealth|ealth|mealth|wealtl)\b", "", text, flags=re.I)
     text = re.sub(r"\s+", " ", text).strip(" .,:;-")
     return text
@@ -104,13 +107,18 @@ def read_examples(csv_path: Path) -> list[TrainingExample]:
         post_url = (row.get("post_url") or row.get("url") or "").strip()
         if not post_url:
             continue
-        hook_text = clean_hook_text(row.get("hook_text") or row.get("hook") or row.get("title") or "")
+        caption = (row.get("caption") or "").strip()
+        hook_text = clean_hook_text(
+            row.get("hook_text") or row.get("hook") or row.get("title") or row.get("alt_text") or ""
+        )
+        if not hook_text and caption:
+            hook_text = caption.rstrip(".")[:120]
         example = TrainingExample(
             post_url=post_url,
             likes=parse_metric(row.get("likes")),
             views=parse_metric(row.get("views")),
             hook_text=hook_text,
-            caption=(row.get("caption") or "").strip(),
+            caption=caption,
             frame_path=(row.get("frame_path") or "").strip(),
             media_path=(row.get("media_path") or "").strip(),
         )
@@ -127,7 +135,9 @@ def run_command(command: list[str], cwd: Path | None = None) -> subprocess.Compl
 def download_post(example: TrainingExample, media_dir: Path, cookies_browser: str | None = None) -> str:
     media_dir.mkdir(parents=True, exist_ok=True)
     command = [
-        "yt-dlp",
+        sys.executable,
+        "-m",
+        "yt_dlp",
         "--no-playlist",
         "--print",
         "after_move:filepath",
@@ -240,7 +250,7 @@ def write_contact_sheet(examples: list[TrainingExample], output_path: Path, sort
     )
 
 
-def analyze_patterns(examples: list[TrainingExample]) -> dict[str, Any]:
+def analyze_patterns(examples: list[TrainingExample], sort_by: str = "views") -> dict[str, Any]:
     bucket_scores: dict[str, list[int]] = defaultdict(list)
     for example in examples:
         for bucket in example.buckets:
@@ -254,10 +264,12 @@ def analyze_patterns(examples: list[TrainingExample]) -> dict[str, Any]:
             "max_score": max(scores),
         })
     patterns.sort(key=lambda item: (item["average_score"], item["count"]), reverse=True)
-    top_examples = [example.to_dict() for example in ranked_examples(examples, "views")[:10]]
-    weak_examples = [example.to_dict() for example in ranked_examples(examples, "views")[-10:]]
+    ranked = ranked_examples(examples, sort_by)
+    top_examples = [example.to_dict() for example in ranked[:10]]
+    weak_examples = [example.to_dict() for example in ranked[-10:]]
     return {
         "total_examples": len(examples),
+        "sort_by": sort_by,
         "patterns": patterns,
         "top_examples": top_examples,
         "weak_examples": weak_examples,
@@ -265,10 +277,20 @@ def analyze_patterns(examples: list[TrainingExample]) -> dict[str, Any]:
 
 
 def write_summary(analysis: dict[str, Any], output_path: Path) -> None:
+    sort_by = analysis.get("sort_by", "views")
+    other_metric = "likes" if sort_by == "views" else "views"
+
+    def metric_line(example: dict[str, Any]) -> str:
+        return (
+            f"- {example[sort_by]:,} {sort_by} / "
+            f"{example[other_metric]:,} {other_metric}: {example['hook_text']}"
+        )
+
     lines = [
         "# BuzzWire IG Training Summary",
         "",
         f"Examples analyzed: {analysis['total_examples']}",
+        f"Sorted by: {sort_by}",
         "",
         "## Winning Buckets",
         "",
@@ -279,10 +301,10 @@ def write_summary(analysis: dict[str, Any], output_path: Path) -> None:
         )
     lines.extend(["", "## Top Hooks", ""])
     for example in analysis["top_examples"][:10]:
-        lines.append(f"- {example['views']:,} views / {example['likes']:,} likes: {example['hook_text']}")
+        lines.append(metric_line(example))
     lines.extend(["", "## Weaker Hooks", ""])
     for example in analysis["weak_examples"][:10]:
-        lines.append(f"- {example['views']:,} views / {example['likes']:,} likes: {example['hook_text']}")
+        lines.append(metric_line(example))
     lines.extend([
         "",
         "## BuzzWire Takeaways",
@@ -302,7 +324,7 @@ def write_outputs(examples: list[TrainingExample], out_dir: Path, sort_by: str) 
         json.dumps([example.to_dict() for example in examples], indent=2, ensure_ascii=True),
         encoding="utf-8",
     )
-    analysis = analyze_patterns(examples)
+    analysis = analyze_patterns(examples, sort_by)
     (out_dir / "pattern_analysis.json").write_text(
         json.dumps(analysis, indent=2, ensure_ascii=True),
         encoding="utf-8",

@@ -124,8 +124,11 @@ Run analysis only:
 Run with local download/frame extraction when you have permission to use the posts as private reference material:
 
 ```powershell
+.\.venv\Scripts\python.exe -m pip install yt-dlp
 .\.venv\Scripts\python.exe scripts\instagram_training_lab.py data\training\wealth_posts.csv --out data\training\wealth --sort-by views --download --cookies-browser chrome
 ```
+
+For Instagram photo or carousel batches where true views are not visible, use `--sort-by likes`.
 
 Outputs:
 

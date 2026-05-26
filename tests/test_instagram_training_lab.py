@@ -53,11 +53,31 @@ class InstagramTrainingLabTest(unittest.TestCase):
             self.assertEqual(analysis["total_examples"], 2)
             self.assertEqual(analysis["top_examples"][0]["views"], 54_900_000)
 
+            likes_analysis = analyze_patterns(examples, "likes")
+            self.assertEqual(likes_analysis["sort_by"], "likes")
+            self.assertEqual(likes_analysis["top_examples"][0]["likes"], 871_000)
+
             out_dir = base / "out"
             write_outputs(examples, out_dir, "views")
             self.assertTrue((out_dir / "contact_sheet_by_views.html").exists())
             self.assertTrue((out_dir / "training_summary.md").exists())
             self.assertTrue((out_dir / "pattern_analysis.json").exists())
+
+    def test_caption_used_when_instagram_alt_has_no_overlay_text(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path = Path(tmp) / "examples.csv"
+            csv_path.write_text(
+                "\n".join(
+                    [
+                        "post_url,likes,views,hook_text,caption",
+                        "https://www.instagram.com/p/one,100K,,Photo by on June 19 2025,Historical fortunes make today's billionaires look modest.",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            examples = read_examples(csv_path)
+            self.assertEqual(examples[0].hook_text, "Historical fortunes make today's billionaires look modest")
 
 
 if __name__ == "__main__":
