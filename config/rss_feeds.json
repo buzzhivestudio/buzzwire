@@ -12,6 +12,36 @@
     "enabled": true
   },
   {
+    "name": "BBC World",
+    "niche": "world news, geopolitics, money, countries, viral knowledge",
+    "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "enabled": true
+  },
+  {
+    "name": "BBC Entertainment",
+    "niche": "entertainment, movies, music, celebrities, culture",
+    "url": "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",
+    "enabled": true
+  },
+  {
+    "name": "BBC Sport Football",
+    "niche": "sports, football, world cup, athletes, culture",
+    "url": "http://newsrss.bbc.co.uk/rss/sportonline_uk_edition/football/rss.xml",
+    "enabled": true
+  },
+  {
+    "name": "The Verge",
+    "niche": "technology, culture, gadgets, future tech, consumer tech",
+    "url": "https://www.theverge.com/rss/index.xml",
+    "enabled": true
+  },
+  {
+    "name": "Variety",
+    "niche": "entertainment, movies, TV, music, celebrities, culture",
+    "url": "https://variety.com/feed/rss/",
+    "enabled": true
+  },
+  {
     "name": "New Atlas Technology",
     "niche": "technology, engineering, innovation, gadgets, robotics, transport, visual explainer",
     "url": "https://newatlas.com/technology/index.rss",

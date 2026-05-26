@@ -118,6 +118,49 @@ class PipelineHeuristicsTest(unittest.TestCase):
         self.assertIn("How it works", payload["image_brief"]["possible_overlays"])
         self.assertIn("engineering close-up", payload["suggested_image_keywords"])
 
+    def test_successaddictives_gets_wealth_style_culture_stories(self) -> None:
+        raw_item = {
+            "title": "The final episode of The Boys will be 65 minutes long",
+            "summary": "The streaming series finale will run longer than a normal episode.",
+            "niche_hint": "entertainment culture viral knowledge",
+        }
+        classification = classify_topic(raw_item)
+        matches, suitability = match_pages(PROFILES, classification, raw_item)
+        matched_pages = [match["page_name"] for match in matches]
+
+        self.assertIn("entertainment", classification["categories"])
+        self.assertIn("SuccessAddictives", matched_pages)
+        self.assertNotIn("CEOBeingCEO", matched_pages)
+        self.assertGreaterEqual(suitability["SuccessAddictives"], 5.0)
+
+        success_match = next(match for match in matches if match["page_name"] == "SuccessAddictives")
+        payload = build_angle(raw_item, classification, success_match)
+        self.assertIn("Culture", payload["viral_title"])
+        self.assertIn("visual fact", payload["caption"].lower())
+        self.assertIn("yellow headline", payload["suggested_image_keywords"])
+        self.assertIn("circle inset", payload["image_brief"]["possible_overlays"])
+
+    def test_successaddictives_gets_wealth_style_world_money_stories(self) -> None:
+        raw_item = {
+            "title": "The entire world is now $345 trillion in debt, the highest in history",
+            "summary": "Global debt has reached a record level according to a new report.",
+            "niche_hint": "money geopolitics viral knowledge",
+        }
+        classification = classify_topic(raw_item)
+        matches, suitability = match_pages(PROFILES, classification, raw_item)
+        matched_pages = [match["page_name"] for match in matches]
+
+        self.assertIn("money", classification["categories"])
+        self.assertIn("history", classification["categories"])
+        self.assertIn("SuccessAddictives", matched_pages)
+        self.assertGreaterEqual(suitability["SuccessAddictives"], 5.0)
+
+        success_match = next(match for match in matches if match["page_name"] == "SuccessAddictives")
+        payload = build_angle(raw_item, classification, success_match)
+        self.assertIn("Global Debt", payload["viral_title"])
+        self.assertIn("source-led", payload["caption"].lower())
+        self.assertIn("big number", payload["image_brief"]["possible_overlays"])
+
     def test_title_casing_preserves_common_ai_branding(self) -> None:
         raw_item = {
             "title": "OpenAI launches API tools for AI agents",

@@ -79,6 +79,76 @@ SUCCESS_EXPLAINER_TERMS = {
     "without digging",
 }
 
+SUCCESS_WEALTH_CATEGORIES = {
+    "engineering",
+    "visual_explainer",
+    "innovation",
+    "infrastructure",
+    "geopolitics",
+    "culture",
+    "entertainment",
+    "sports",
+    "history",
+    "places",
+    "money",
+}
+SUCCESS_WEALTH_TERMS = {
+    "world cup",
+    "olympics",
+    "movie",
+    "movies",
+    "film",
+    "series",
+    "episode",
+    "finale",
+    "cast",
+    "netflix",
+    "spotify",
+    "album",
+    "song",
+    "drake",
+    "michael jackson",
+    "shakira",
+    "ronaldo",
+    "messi",
+    "gta",
+    "playstation",
+    "iphone",
+    "ferrari",
+    "tesla",
+    "trump",
+    "xi jinping",
+    "iran",
+    "china",
+    "debt",
+    "richest",
+    "trillion",
+    "billion",
+    "profit",
+    "bank",
+    "banks",
+    "empire",
+    "empires",
+    "presidents",
+    "countries",
+    "cities",
+    "places",
+    "buildings",
+    "homes",
+    "mansion",
+    "airport",
+    "road",
+    "earth",
+    "first time",
+    "first ever",
+    "highest in history",
+    "biggest",
+    "longest",
+    "most powerful",
+    "insane",
+    "before and after",
+}
+
 
 def _success_explainer_text(raw_title: str, classification: dict[str, Any]) -> str:
     return " ".join(
@@ -144,6 +214,89 @@ def _success_explainer_subject(raw_title: str, actor: str) -> str:
     return " ".join(cleaned_words[:4]).strip(" .,:;-") or "This Engineering Idea"
 
 
+def _is_success_wealth(raw_title: str, classification: dict[str, Any]) -> bool:
+    text = _success_explainer_text(raw_title, classification)
+    categories = {str(category).lower() for category in classification.get("categories", [])}
+    return bool(categories.intersection(SUCCESS_WEALTH_CATEGORIES)) or any(
+        term in text for term in SUCCESS_WEALTH_TERMS
+    )
+
+
+def _success_wealth_subject(raw_title: str, actor: str) -> str:
+    text = raw_title.lower()
+    checks = [
+        ("world cup", "The 2026 World Cup"),
+        ("halftime show", "The World Cup Halftime Show"),
+        ("olympics", "The Olympics"),
+        ("doping", "The Pro-Doping Olympics"),
+        ("drake", "Drake"),
+        ("michael jackson", "Michael Jackson"),
+        ("spotify", "Spotify"),
+        ("netflix", "Netflix"),
+        ("the boys", "The Boys Finale"),
+        ("game of thrones", "Game Of Thrones"),
+        ("batman", "Batman"),
+        ("james bond", "James Bond"),
+        ("gta 6", "GTA 6"),
+        ("gta", "GTA"),
+        ("playstation", "PlayStation"),
+        ("iphone", "The iPhone"),
+        ("ferrari", "Ferrari"),
+        ("tesla", "Tesla"),
+        ("elon musk", "Elon Musk"),
+        ("trump", "Trump"),
+        ("xi jinping", "Xi Jinping"),
+        ("iran", "The U.S.-Iran Story"),
+        ("china", "China"),
+        ("debt", "Global Debt"),
+        ("richest banks", "The World's Richest Banks"),
+        ("richest people", "The Richest People Ever"),
+        ("empty homes", "America's Empty Homes"),
+        ("empire", "The Longest Empires"),
+        ("empires", "The Longest Empires"),
+        ("presidents", "U.S. Presidents"),
+        ("new york", "New York City"),
+        ("norilsk", "Norilsk"),
+        ("madeira", "Madeira's Airport"),
+        ("airport", "This Airport"),
+        ("buildings", "Modern Buildings"),
+        ("homes", "These Homes"),
+        ("cats", "Japan's Cat Warning Signs"),
+        ("animals", "Animals That Outlive Humans"),
+    ]
+    for needle, subject in checks:
+        if needle in text:
+            return subject
+    if actor.lower() not in WEAK_ACTORS and len(actor.split()) <= 4:
+        return actor
+    cleaned_words = [
+        word
+        for word in title_case_soft(raw_title).split()
+        if word.strip(".,:;!?").lower() not in {"says", "said", "new", "report", "reports", "according"}
+    ]
+    return " ".join(cleaned_words[:6]).strip(" .,:;-") or "This Story"
+
+
+def _success_wealth_frame(raw_title: str, classification: dict[str, Any]) -> str:
+    text = raw_title.lower()
+    categories = {str(category).lower() for category in classification.get("categories", [])}
+    if "money" in categories or any(term in text for term in ["richest", "debt", "trillion", "billion", "profit"]):
+        return "money"
+    if "geopolitics" in categories or any(term in text for term in ["china", "iran", "trump", "xi jinping", "countries"]):
+        return "world"
+    if "sports" in categories or any(term in text for term in ["world cup", "olympics", "fifa", "ronaldo", "messi"]):
+        return "sports"
+    if "entertainment" in categories:
+        return "culture"
+    if "history" in categories:
+        return "history"
+    if "places" in categories:
+        return "places"
+    if categories.intersection({"ai", "innovation", "engineering", "visual_explainer"}):
+        return "future tech"
+    return "curiosity"
+
+
 def _actor_from_title(title: str) -> str:
     title_lower = title.lower()
     actor_checks = [
@@ -199,6 +352,16 @@ def _topic_label(classification: dict[str, Any]) -> str:
         return "engineering"
     if "innovation" in categories:
         return "innovation"
+    if "money" in categories:
+        return "money"
+    if "entertainment" in categories:
+        return "entertainment"
+    if "sports" in categories:
+        return "sports"
+    if "history" in categories:
+        return "history"
+    if "places" in categories:
+        return "places"
     if "AI" in categories:
         return "AI"
     if "jobs" in categories:
@@ -327,6 +490,31 @@ def _topic_signal(raw_title: str, classification: dict[str, Any]) -> str:
         ("alloy", "Materials"),
         ("solid-state", "Hardware"),
         ("3d printing", "Manufacturing"),
+        ("world cup", "World Cup"),
+        ("olympics", "Olympics"),
+        ("doping", "Sports Business"),
+        ("movie", "Entertainment"),
+        ("film", "Entertainment"),
+        ("series", "Entertainment"),
+        ("episode", "Entertainment"),
+        ("netflix", "Streaming"),
+        ("spotify", "Streaming"),
+        ("album", "Music"),
+        ("song", "Music"),
+        ("gta", "Gaming"),
+        ("playstation", "Gaming"),
+        ("iphone", "Consumer Tech"),
+        ("ferrari", "Cars"),
+        ("debt", "Debt"),
+        ("richest", "Wealth"),
+        ("trillion", "Wealth"),
+        ("billion", "Wealth"),
+        ("empire", "History"),
+        ("empires", "History"),
+        ("presidents", "History"),
+        ("buildings", "Architecture"),
+        ("homes", "Places"),
+        ("countries", "World Power"),
     ]
     for needle, signal in checks:
         if needle in text:
@@ -340,6 +528,8 @@ def _topic_signal(raw_title: str, classification: dict[str, Any]) -> str:
         return "Workforce"
     if "geopolitics" in categories:
         return "Global Risk"
+    if categories.intersection({"entertainment", "sports", "history", "places", "money"}):
+        return "Viral Knowledge"
     if categories.intersection({"engineering", "visual_explainer", "innovation", "infrastructure"}):
         return "Engineering"
     return "Business Signal"
@@ -700,6 +890,8 @@ def _specific_success_title(
                 variant_hint,
             ),
         )
+    if _is_success_wealth(raw_title, classification):
+        return _success_wealth_titles(actor, raw_title, classification, variant_hint)
     if "spacex" in text and "ipo" in text:
         return (
             _rotate(
@@ -853,6 +1045,97 @@ def _specific_success_title(
             ),
         )
     return None
+
+
+def _success_wealth_titles(
+    actor: str,
+    raw_title: str,
+    classification: dict[str, Any],
+    variant_hint: int,
+) -> tuple[str, str]:
+    text = raw_title.lower()
+    subject = _success_wealth_subject(raw_title, actor)
+    frame = _success_wealth_frame(raw_title, classification)
+
+    if re.search(r"\b(first|first-ever|first ever|first time|for the first time)\b", text):
+        viral_options = [
+            f"{subject} Is Happening For The First Time Ever",
+            f"{subject} Just Became A First-Time Story",
+            f"The First-Ever {frame.title()} Moment People Will Notice",
+        ]
+        aggressive_options = [
+            f"Why {subject} Is A Bigger First Than It Sounds",
+            f"The First-Time Detail That Makes {subject} Interesting",
+            f"What Makes This {frame.title()} First So Scroll-Stopping",
+        ]
+    elif re.search(r"\b(richest|biggest|longest|highest|most powerful|most anticipated|most insane|best)\b", text):
+        viral_options = [
+            f"The {subject} Story Is Bigger Than It Looks",
+            f"{subject} Is One Of The Wildest {frame.title()} Stories Right Now",
+            f"The {frame.title()} Ranking People Will Stop Scrolling For",
+        ]
+        aggressive_options = [
+            f"Why {subject} Gets Attention So Fast",
+            f"The Detail That Makes {subject} Hard To Ignore",
+            f"What Makes This {frame.title()} Story So Shareable",
+        ]
+    elif frame == "culture":
+        viral_options = [
+            f"{subject} Just Became A Bigger Culture Story",
+            f"The {subject} Update Everyone Will Be Talking About",
+            f"{subject} Is Turning Into A Scroll-Stopping Moment",
+        ]
+        aggressive_options = [
+            f"Why {subject} Is Getting So Much Attention",
+            f"The Culture Detail That Makes {subject} Interesting",
+            f"What Makes {subject} A Bigger Story Than It Sounds",
+        ]
+    elif frame == "sports":
+        viral_options = [
+            f"{subject} Is Becoming A Massive Sports Story",
+            f"The Sports Detail That Makes {subject} Different",
+            f"{subject} Just Got More Interesting",
+        ]
+        aggressive_options = [
+            f"Why {subject} Could Be A Huge Sports Moment",
+            f"The Detail Fans Will Notice About {subject}",
+            f"What Makes {subject} More Than A Normal Sports Update",
+        ]
+    elif frame in {"world", "money"}:
+        viral_options = [
+            f"{subject} Is A World Story People Should Watch",
+            f"The {frame.title()} Signal Behind {subject}",
+            f"{subject} Is Bigger Than A Normal Headline",
+        ]
+        aggressive_options = [
+            f"Why {subject} Matters More Than It Sounds",
+            f"The Detail That Makes {subject} A Bigger Signal",
+            f"What {subject} Says About Where The World Is Moving",
+        ]
+    elif frame in {"history", "places"}:
+        viral_options = [
+            f"{subject} Is Stranger Than It Sounds",
+            f"The Hidden Story Behind {subject}",
+            f"{subject} Looks Unreal For A Reason",
+        ]
+        aggressive_options = [
+            f"Why {subject} Still Gets People Curious",
+            f"The Detail That Makes {subject} Hard To Ignore",
+            f"What Most People Miss About {subject}",
+        ]
+    else:
+        viral_options = [
+            f"{subject} Is Bigger Than It Looks",
+            f"The Detail Behind {subject} Is Wild",
+            f"{subject} Just Became A Scroll-Stopping Story",
+        ]
+        aggressive_options = [
+            f"Why {subject} Gets Attention So Fast",
+            f"The Hidden Detail Inside {subject}",
+            f"What Makes {subject} Worth Watching",
+        ]
+
+    return _rotate(viral_options, variant_hint), _rotate(aggressive_options, variant_hint)
 
 
 def _success_titles(actor: str, topic: str, raw_title: str, classification: dict[str, Any], variant_hint: int) -> tuple[str, str]:
@@ -1126,6 +1409,15 @@ def _caption(
                 "people can see the problem, understand the solution, and imagine where else it could be used. "
                 f"{tone} The lesson is simple: useful engineering wins attention because it makes hard things look obvious."
             )
+        if _is_success_wealth(raw_item.get("title", ""), classification):
+            subject = _success_wealth_subject(raw_item.get("title", ""), actor)
+            frame = _success_wealth_frame(raw_item.get("title", ""), classification)
+            return (
+                f"{source_sentence} This works as a viral {frame} story because it has a clear visual, a recognizable hook, "
+                f"and one simple fact people can understand fast: {subject}. Keep the angle source-led, put the biggest name, "
+                "number, date, or visual contrast first, then explain why it feels surprising. "
+                f"{tone} The post should feel like a bold visual fact, not a long article."
+            )
         success_topic = "business" if topic == "India" else topic
         subject = _business_subject(actor, raw_item.get("title", ""), _topic_signal(raw_item.get("title", ""), classification))
         return (
@@ -1208,6 +1500,16 @@ def _carousel(raw_item: dict[str, Any], classification: dict[str, Any], viral_ti
             f"Why it works: {subject} makes a difficult physical problem easier to control.",
             "Why it matters: speed, safety, cost, and usefulness are what make engineering ideas spread.",
         ]
+    if _is_success_wealth(raw_item.get("title", ""), classification):
+        actor = _actor_from_title(raw_item.get("title", ""))
+        subject = _success_wealth_subject(raw_item.get("title", ""), actor)
+        frame = _success_wealth_frame(raw_item.get("title", ""), classification)
+        return [
+            viral_title,
+            f"What happened: {source_sentence}",
+            f"Why people stop: {subject} gives the story a simple visual {frame} hook.",
+            "What to show: the clearest face, object, logo, number, or before/after contrast.",
+        ]
     return [
         viral_title,
         f"What happened: {source_sentence}",
@@ -1229,6 +1531,13 @@ def _visual_direction(profile: dict[str, Any], raw_item: dict[str, Any], classif
             f"Use a real close-up of {subject} or the process in action. Build a black/white/yellow explainer card with "
             "one bold hook, 2-3 small labels/arrows showing the mechanism, strong contrast, and a clear source line. "
             "Avoid abstract office backgrounds; the object or process must be the visual anchor."
+        )
+    if profile.get("page_name") == "SuccessAddictives" and _is_success_wealth(raw_item.get("title", ""), classification):
+        subject = _success_wealth_subject(raw_item.get("title", ""), actor)
+        return (
+            f"Use a full-bleed photo collage built around {subject}. Put the strongest face, object, logo, or location in the "
+            "center, add circular inset cutouts for supporting context, use yellow arrows/circles only where they clarify the hook, "
+            "and place a huge condensed yellow headline on a dark lower band with a small source line."
         )
     categories = ", ".join(classification.get("categories", []))
     return (
@@ -1265,6 +1574,20 @@ def _image_brief(profile: dict[str, Any], raw_item: dict[str, Any], classificati
             "visual_references": ["viral tech explainer reel", "engineering breakdown card", "tool/process close-up", "high-retention Instagram news graphic"],
             "text_hierarchy": "Huge curiosity hook first, small mechanism labels second, source line bottom-left, page mark bottom-right.",
             "possible_overlays": ["How it works", "Hidden mechanism", "Before/after", "Why it matters"],
+        }
+
+    if page_name == "SuccessAddictives" and _is_success_wealth(raw_item.get("title", ""), classification):
+        subject = _success_wealth_subject(raw_item.get("title", ""), actor)
+        frame = _success_wealth_frame(raw_item.get("title", ""), classification)
+        return {
+            "composition": f"Wealth-style vertical collage centered on {subject}, with one hero image and 1-3 circular inset cutouts.",
+            "background_style": "Cinematic photo composite with dark contrast, crisp cutouts, and minimal empty space.",
+            "mood": "Bold, surprising, mainstream, fast to understand.",
+            "colors": ["black", "white", "bright yellow headline", "small gray source line"],
+            "object_suggestions": [subject, "recognizable face or logo", "supporting inset image", "big number/date cue", f"{frame} context"],
+            "visual_references": ["Wealth-style Instagram grid card", "yellow headline news collage", "viral fact thumbnail"],
+            "text_hierarchy": "Massive all-caps yellow headline first, small source/brand line second, no paragraph text on the image.",
+            "possible_overlays": ["yellow arrow", "circle inset", "big number", "before/after", "source tag"],
         }
 
     if page_name == "SuccessAddictives":
@@ -1334,6 +1657,14 @@ def _image_keywords(raw_item: dict[str, Any], classification: dict[str, Any], pr
                 "mechanism",
                 "tool in action",
                 "science explainer",
+            ])
+        elif _is_success_wealth(raw_item.get("title", ""), classification):
+            keywords.extend([
+                _success_wealth_subject(raw_item.get("title", ""), actor),
+                "viral news collage",
+                "yellow headline",
+                "circle inset",
+                "photo composite",
             ])
         else:
             keywords.extend(["office", "AI", "corporate"])
