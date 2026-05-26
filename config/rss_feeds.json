@@ -12,6 +12,36 @@
     "enabled": true
   },
   {
+    "name": "New Atlas Technology",
+    "niche": "technology, engineering, innovation, gadgets, robotics, transport, visual explainer",
+    "url": "https://newatlas.com/technology/index.rss",
+    "enabled": true
+  },
+  {
+    "name": "New Atlas Transport",
+    "niche": "automotive, engineering, vehicles, future tech, visual explainer",
+    "url": "https://newatlas.com/transport/index.rss",
+    "enabled": true
+  },
+  {
+    "name": "Tech Xplore Engineering",
+    "niche": "engineering, materials, robotics, hardware, innovation, visual explainer",
+    "url": "https://techxplore.com/rss-feed/engineering-news/",
+    "enabled": true
+  },
+  {
+    "name": "Tech Xplore Robotics",
+    "niche": "robotics, automation, AI, engineering, visual explainer",
+    "url": "https://techxplore.com/rss-feed/robotics-news/",
+    "enabled": true
+  },
+  {
+    "name": "ScienceDaily Technology",
+    "niche": "technology, science, engineering, robotics, AI, visual explainer",
+    "url": "https://www.sciencedaily.com/rss/top/technology.xml",
+    "enabled": true
+  },
+  {
     "name": "The Hindu National",
     "niche": "India, national",
     "url": "https://www.thehindu.com/news/national/feeder/default.rss",

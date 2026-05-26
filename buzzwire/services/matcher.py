@@ -32,6 +32,39 @@ BUSINESS_TEXT_TERMS = {
     "company",
 }
 
+SUCCESS_EXPLAINER_CATEGORIES = {"engineering", "visual_explainer", "innovation", "infrastructure"}
+SUCCESS_EXPLAINER_TERMS = {
+    "how it works",
+    "why it works",
+    "looks impossible",
+    "most people",
+    "no idea",
+    "hidden",
+    "mechanism",
+    "mechanical",
+    "physics",
+    "engineered",
+    "engineering",
+    "tool",
+    "wrench",
+    "construction",
+    "repair",
+    "sealant",
+    "pipe",
+    "plumbing",
+    "prototype",
+    "robotics",
+    "drone",
+    "scanner",
+    "sensor",
+    "motor",
+    "battery",
+    "vehicle",
+    "automotive",
+    "in seconds",
+    "without digging",
+}
+
 JOB_MARKET_TERMS = {
     "entry-level job",
     "entry level job",
@@ -100,6 +133,7 @@ def _text_blob(raw_item: dict[str, Any], classification: dict[str, Any]) -> str:
         [
             str(raw_item.get("title", "")),
             str(raw_item.get("summary", "")),
+            str(raw_item.get("niche_hint", "")),
             " ".join(classification.get("categories", [])),
             classification.get("country_relevance", ""),
         ]
@@ -149,6 +183,9 @@ def score_profile(
     clear_business_signal = bool(categories.intersection(BUSINESS_CATEGORIES)) or any(
         _contains_term(text, term) for term in BUSINESS_TEXT_TERMS
     )
+    explainer_signal = bool(categories.intersection(SUCCESS_EXPLAINER_CATEGORIES)) or any(
+        _contains_term(text, term) for term in SUCCESS_EXPLAINER_TERMS
+    )
     job_market_signal = "jobs" in categories and any(
         _contains_term(text, term) for term in JOB_MARKET_TERMS
     )
@@ -158,11 +195,19 @@ def score_profile(
             and virality >= 5.0
             and (clear_business_signal or job_market_signal)
         )
-        if not lower_floor_business_story:
+        lower_floor_success_explainer = (
+            page_name == "SuccessAddictives"
+            and virality >= 5.0
+            and explainer_signal
+        )
+        if not (lower_floor_business_story or lower_floor_success_explainer):
             return 0.0
 
     if page_name in BUSINESS_PAGE_NAMES:
-        if not clear_business_signal:
+        if page_name == "SuccessAddictives":
+            if not (clear_business_signal or explainer_signal):
+                return 0.0
+        elif not clear_business_signal:
             return 0.0
         local_government_story = any(_contains_term(text, term) for term in LOCAL_GOVERNMENT_TERMS)
         high_impact_business = any(_contains_term(text, term) for term in HIGH_IMPACT_BUSINESS_TERMS)
@@ -215,6 +260,8 @@ def score_profile(
         score += 1.4
     if page_name in BUSINESS_PAGE_NAMES and job_market_signal:
         score += 1.4
+    if page_name == "SuccessAddictives" and explainer_signal:
+        score += 3.0
     if page_name == "CEOBeingCEO" and any(
         _contains_term(text, term)
         for term in {"ipo", "trillionaire", "ai", "restructuring", "trade deal", "union recognition", "roblox"}

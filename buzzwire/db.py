@@ -314,12 +314,54 @@ def seed_profiles(conn: Any, path: Path = PAGE_PROFILES_PATH) -> None:
                     ELSE page_profiles.username
                 END,
                 preferred_sources = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.preferred_sources
                     WHEN page_profiles.preferred_sources IN ('', '[]') THEN excluded.preferred_sources
                     ELSE page_profiles.preferred_sources
                 END,
                 country_focus = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.country_focus
                     WHEN page_profiles.country_focus = '' THEN excluded.country_focus
                     ELSE page_profiles.country_focus
+                END,
+                niche = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.niche
+                    ELSE page_profiles.niche
+                END,
+                audience = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.audience
+                    ELSE page_profiles.audience
+                END,
+                emotional_drivers = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.emotional_drivers
+                    ELSE page_profiles.emotional_drivers
+                END,
+                allowed_topics = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.allowed_topics
+                    ELSE page_profiles.allowed_topics
+                END,
+                blocked_topics = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.blocked_topics
+                    ELSE page_profiles.blocked_topics
+                END,
+                tone_rules = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.tone_rules
+                    ELSE page_profiles.tone_rules
+                END,
+                headline_style = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.headline_style
+                    ELSE page_profiles.headline_style
+                END,
+                caption_style = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.caption_style
+                    ELSE page_profiles.caption_style
+                END,
+                visual_style = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.visual_style
+                    ELSE page_profiles.visual_style
+                END,
+                risk_tolerance = CASE
+                    WHEN excluded.page_name = 'SuccessAddictives' THEN excluded.risk_tolerance
+                    ELSE page_profiles.risk_tolerance
                 END,
                 updated_at = CURRENT_TIMESTAMP
             """,

@@ -34,6 +34,115 @@ COMMON_TITLE_WORDS = {
 
 WEAK_ACTORS = {"new", "news", "story", "this", "that", "us", "uk"}
 
+SUCCESS_EXPLAINER_CATEGORIES = {"engineering", "visual_explainer", "innovation", "infrastructure"}
+SUCCESS_EXPLAINER_TERMS = {
+    "how it works",
+    "why it works",
+    "looks impossible",
+    "most people",
+    "no idea",
+    "hidden",
+    "mechanism",
+    "mechanical",
+    "physics",
+    "engineered",
+    "wrench",
+    "construction",
+    "repair",
+    "sealant",
+    "pipe",
+    "plumbing",
+    "prototype",
+    "robotics",
+    "drone",
+    "scanner",
+    "sensor",
+    "motor",
+    "battery",
+    "vehicle",
+    "car",
+    "automotive",
+    "material",
+    "materials",
+    "manufacturing",
+    "3d printed",
+    "3d printing",
+    "origami",
+    "load-bearing",
+    "solar cell",
+    "solar cells",
+    "perovskite",
+    "alloy",
+    "solid-state",
+    "hardware",
+    "in seconds",
+    "without digging",
+}
+
+
+def _success_explainer_text(raw_title: str, classification: dict[str, Any]) -> str:
+    return " ".join(
+        [
+            raw_title,
+            str(classification.get("_summary_text", "")),
+        ]
+    ).lower()
+
+
+def _is_success_explainer(raw_title: str, classification: dict[str, Any]) -> bool:
+    text = _success_explainer_text(raw_title, classification)
+    categories = {str(category).lower() for category in classification.get("categories", [])}
+    if "visual_explainer" in categories:
+        return True
+    if categories.intersection(SUCCESS_EXPLAINER_CATEGORIES) and any(term in text for term in SUCCESS_EXPLAINER_TERMS):
+        return True
+    return False
+
+
+def _success_explainer_subject(raw_title: str, actor: str) -> str:
+    text = raw_title.lower()
+    checks = [
+        ("self-healing sealant", "This Self-Healing Sealant"),
+        ("sealant", "This Leak-Sealing Material"),
+        ("pipe leak", "This Pipe Repair Method"),
+        ("pipe", "This Pipe System"),
+        ("wrench", "This Wrench Trick"),
+        ("tool", "This Tool"),
+        ("robot", "This Robot"),
+        ("robotics", "This Robot"),
+        ("drone", "This Drone System"),
+        ("battery", "This Battery Design"),
+        ("motor", "This Motor Design"),
+        ("engine", "This Engine Design"),
+        ("vehicle", "This Vehicle System"),
+        ("car", "This Car System"),
+        ("bridge", "This Bridge Design"),
+        ("construction", "This Construction Method"),
+        ("material", "This Material"),
+        ("origami", "This Origami Engineering Pattern"),
+        ("solar cell", "This Solar Cell Design"),
+        ("solar cells", "This Solar Cell Design"),
+        ("perovskite", "This Solar Cell Design"),
+        ("alloy", "This Alloy Design"),
+        ("solid-state", "This Battery Design"),
+        ("hardware", "This Hardware System"),
+        ("manufacturing", "This Manufacturing Method"),
+        ("scanner", "This Scanner"),
+        ("sensor", "This Sensor"),
+        ("physics", "This Physics Trick"),
+    ]
+    for needle, subject in checks:
+        if needle in text:
+            return subject
+    if actor.lower() not in WEAK_ACTORS and len(actor.split()) <= 4:
+        return actor
+    cleaned_words = [
+        word
+        for word in title_case_soft(raw_title).split()
+        if word.strip(".,:;!?").lower() not in {"new", "study", "says", "shows", "reveals"}
+    ]
+    return " ".join(cleaned_words[:4]).strip(" .,:;-") or "This Engineering Idea"
+
 
 def _actor_from_title(title: str) -> str:
     title_lower = title.lower()
@@ -84,6 +193,12 @@ def _topic_label(classification: dict[str, Any]) -> str:
     categories = classification.get("categories", [])
     if "domestic_politics" in categories:
         return "political debate"
+    if "visual_explainer" in categories:
+        return "visual explainer"
+    if "engineering" in categories:
+        return "engineering"
+    if "innovation" in categories:
+        return "innovation"
     if "AI" in categories:
         return "AI"
     if "jobs" in categories:
@@ -170,6 +285,8 @@ def _topic_signal(raw_title: str, classification: dict[str, Any]) -> str:
         ("hiring", "Hiring"),
         ("job", "Workforce"),
         ("smart glasses", "Hardware"),
+        ("api tools", "API Tools"),
+        ("ai agents", "AI Agents"),
         ("ai industry", "AI Industry"),
         ("artificial intelligence", "AI"),
         ("machine learning", "AI"),
@@ -187,6 +304,29 @@ def _topic_signal(raw_title: str, classification: dict[str, Any]) -> str:
         ("spending", "Platform Risk"),
         ("engineering hubs", "Talent"),
         ("generate ip", "Innovation"),
+        ("how it works", "Mechanism"),
+        ("looks impossible", "Engineering"),
+        ("sealant", "Materials"),
+        ("pipe", "Infrastructure"),
+        ("wrench", "Tools"),
+        ("tool", "Tools"),
+        ("construction", "Construction"),
+        ("repair", "Repair"),
+        ("mechanism", "Mechanism"),
+        ("mechanical", "Mechanism"),
+        ("physics", "Physics"),
+        ("robotics", "Robotics"),
+        ("drone", "Robotics"),
+        ("battery", "Hardware"),
+        ("automotive", "Automotive"),
+        ("vehicle", "Automotive"),
+        ("origami", "Engineering"),
+        ("load-bearing", "Engineering"),
+        ("solar cell", "Materials"),
+        ("perovskite", "Materials"),
+        ("alloy", "Materials"),
+        ("solid-state", "Hardware"),
+        ("3d printing", "Manufacturing"),
     ]
     for needle, signal in checks:
         if needle in text:
@@ -200,6 +340,8 @@ def _topic_signal(raw_title: str, classification: dict[str, Any]) -> str:
         return "Workforce"
     if "geopolitics" in categories:
         return "Global Risk"
+    if categories.intersection({"engineering", "visual_explainer", "innovation", "infrastructure"}):
+        return "Engineering"
     return "Business Signal"
 
 
@@ -488,7 +630,16 @@ def _specific_ceo_title(
 
 def _tone_line(tone_override: str | None, default: str) -> str:
     if not tone_override:
-        return default
+        default_lower = default.lower()
+        if "visual curiosity" in default_lower or "mechanism" in default_lower:
+            return "Keep the framing visual, simple, and tied to what the source actually shows."
+        if "executive" in default_lower or "strategic" in default_lower:
+            return "Keep the framing sharp, strategic, and source-led."
+        if "relatable" in default_lower:
+            return "Keep the framing human, relatable, and source-led."
+        if "bold" in default_lower:
+            return "Keep the framing bold, factual, and source-led."
+        return "Keep the framing clear, punchy, and source-led."
     tone = tone_override.strip().lower()
     if "calm" in tone or "balanced" in tone:
         return "Keep the framing balanced, clear, and source-led."
@@ -508,6 +659,47 @@ def _specific_success_title(
     variant_hint: int,
 ) -> tuple[str, str] | None:
     text = raw_title.lower()
+    if _is_success_explainer(raw_title, classification):
+        subject = _success_explainer_subject(raw_title, actor)
+        return (
+            _rotate(
+                [
+                    f"Most People Have No Idea How {subject} Works",
+                    f"{subject} Looks Simple Until You See The Engineering",
+                    f"The Hidden Engineering Behind {subject}",
+                    f"This Is Why {subject} Gets Attention",
+                ],
+                variant_hint,
+            ),
+            _rotate(
+                [
+                    f"Why {subject} Is More Impressive Than It Looks",
+                    f"The Mechanism Inside {subject} Is The Real Story",
+                    f"What {subject} Reveals About Practical Innovation",
+                    f"How {subject} Turns A Hard Problem Into Leverage",
+                ],
+                variant_hint,
+            ),
+        )
+    if "generate ip" in text or "engineering hubs" in text:
+        return (
+            _rotate(
+                [
+                    "AI Is Quietly Turning Engineering Hubs Into IP Machines",
+                    "Engineering Hubs Are Becoming An AI-Generated IP Advantage",
+                    "The IP Race Inside AI Engineering Is Getting Real",
+                ],
+                variant_hint,
+            ),
+            _rotate(
+                [
+                    "Why AI-Generated IP Could Change Engineering Work",
+                    "What AI-Generated IP Means For Ambitious Operators",
+                    "The Skills Lesson Hidden Inside AI-Generated IP",
+                ],
+                variant_hint,
+            ),
+        )
     if "spacex" in text and "ipo" in text:
         return (
             _rotate(
@@ -738,7 +930,7 @@ def _ceo_titles(actor: str, raw_title: str, classification: dict[str, Any], vari
             f"The Execution Mistake Behind This {signal} Story",
             f"What Founders Should Learn From {clean_actor}",
         ]
-    elif signal in {"AI", "AI Industry", "Hardware", "Innovation", "Talent"}:
+    elif signal in {"AI", "AI Industry", "AI Agents", "API Tools", "Hardware", "Innovation", "Talent"}:
         subject = _business_subject(clean_actor, raw_title, signal)
         viral_options = [
             f"{subject} Is Quietly Turning Into A Boardroom Advantage",
@@ -926,6 +1118,14 @@ def _caption(
     tone = _tone_line(tone_override, profile.get("tone_rules", "Keep it punchy and clear."))
 
     if page_name == "SuccessAddictives":
+        if _is_success_explainer(raw_item.get("title", ""), classification):
+            subject = _success_explainer_subject(raw_item.get("title", ""), actor)
+            return (
+                f"{source_sentence} The interesting part is the mechanism underneath: {subject} turns a messy real-world "
+                "problem into something easier to control, repeat, or scale. This is why practical technology goes viral: "
+                "people can see the problem, understand the solution, and imagine where else it could be used. "
+                f"{tone} The lesson is simple: useful engineering wins attention because it makes hard things look obvious."
+            )
         success_topic = "business" if topic == "India" else topic
         subject = _business_subject(actor, raw_item.get("title", ""), _topic_signal(raw_item.get("title", ""), classification))
         return (
@@ -999,6 +1199,15 @@ def _carousel(raw_item: dict[str, Any], classification: dict[str, Any], viral_ti
             "Why it matters: this is a political allegation and needs attribution.",
             "What to watch next: official responses, source verification, and election-season messaging.",
         ]
+    if _is_success_explainer(raw_item.get("title", ""), classification):
+        actor = _actor_from_title(raw_item.get("title", ""))
+        subject = _success_explainer_subject(raw_item.get("title", ""), actor)
+        return [
+            viral_title,
+            f"What you are seeing: {source_sentence}",
+            f"Why it works: {subject} makes a difficult physical problem easier to control.",
+            "Why it matters: speed, safety, cost, and usefulness are what make engineering ideas spread.",
+        ]
     return [
         viral_title,
         f"What happened: {source_sentence}",
@@ -1013,6 +1222,13 @@ def _visual_direction(profile: dict[str, Any], raw_item: dict[str, Any], classif
         return (
             "Use neutral Indian Parliament or Constitution imagery, no party colors as the dominant theme, "
             "no angry faces, no accusation text as fact. Add a clear source line and a high-risk review label."
+        )
+    if profile.get("page_name") == "SuccessAddictives" and _is_success_explainer(raw_item.get("title", ""), classification):
+        subject = _success_explainer_subject(raw_item.get("title", ""), actor)
+        return (
+            f"Use a real close-up of {subject} or the process in action. Build a black/white/yellow explainer card with "
+            "one bold hook, 2-3 small labels/arrows showing the mechanism, strong contrast, and a clear source line. "
+            "Avoid abstract office backgrounds; the object or process must be the visual anchor."
         )
     categories = ", ".join(classification.get("categories", []))
     return (
@@ -1036,6 +1252,19 @@ def _image_brief(profile: dict[str, Any], raw_item: dict[str, Any], classificati
             "visual_references": ["Indian election desk graphic", "Reuters-style political explainer", "neutral civic news card"],
             "text_hierarchy": "Short headline first, attribution/source second, high-risk label small at the bottom.",
             "possible_overlays": ["Allegation", "Political debate", "Verify source"],
+        }
+
+    if page_name == "SuccessAddictives" and _is_success_explainer(raw_item.get("title", ""), classification):
+        subject = _success_explainer_subject(raw_item.get("title", ""), actor)
+        return {
+            "composition": f"Full-frame close-up of {subject} or the process mid-action, with 2-3 arrows explaining the mechanism.",
+            "background_style": "Real object/process footage or a crisp engineering close-up, not a generic corporate background.",
+            "mood": "Curious, visual, clever, practical, high-retention.",
+            "colors": ["black", "white", "yellow highlight", "small gray technical labels"],
+            "object_suggestions": [subject, "hands using the tool", "before/after problem", "material close-up", "mechanism detail"],
+            "visual_references": ["viral tech explainer reel", "engineering breakdown card", "tool/process close-up", "high-retention Instagram news graphic"],
+            "text_hierarchy": "Huge curiosity hook first, small mechanism labels second, source line bottom-left, page mark bottom-right.",
+            "possible_overlays": ["How it works", "Hidden mechanism", "Before/after", "Why it matters"],
         }
 
     if page_name == "SuccessAddictives":
@@ -1098,7 +1327,16 @@ def _image_keywords(raw_item: dict[str, Any], classification: dict[str, Any], pr
     if classification.get("country_relevance") == "India":
         keywords.extend(["India", "economy", "map"])
     if profile.get("page_name") == "SuccessAddictives":
-        keywords.extend(["office", "AI", "corporate"])
+        if _is_success_explainer(raw_item.get("title", ""), classification):
+            keywords.extend([
+                _success_explainer_subject(raw_item.get("title", ""), actor),
+                "engineering close-up",
+                "mechanism",
+                "tool in action",
+                "science explainer",
+            ])
+        else:
+            keywords.extend(["office", "AI", "corporate"])
     if profile.get("page_name") == "HerSignal":
         keywords.extend(["modern woman", "lifestyle editorial"])
     return list(dict.fromkeys(keyword for keyword in keywords if keyword))
@@ -1115,9 +1353,13 @@ def build_angle(
     title = clean_text(raw_item.get("title", "Untitled topic"))
     neutral_title = title_case_soft(title)
     actor = _actor_from_title(title)
-    topic = _topic_label(classification)
     page_name = profile.get("page_name", "")
-    classification = {**classification, "_title_text": title}
+    classification = {
+        **classification,
+        "_title_text": title,
+        "_summary_text": clean_text(raw_item.get("summary", "")),
+    }
+    topic = _topic_label(classification)
 
     if page_name == "SuccessAddictives":
         viral_title, aggressive_title = _success_titles(actor, topic, title, classification, variant_hint)

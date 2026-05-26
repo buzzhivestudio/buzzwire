@@ -94,6 +94,30 @@ class PipelineHeuristicsTest(unittest.TestCase):
         self.assertIn("CEOBeingCEO", matched_pages)
         self.assertGreaterEqual(suitability["CEOBeingCEO"], 5.0)
 
+    def test_successaddictives_gets_visual_engineering_explainers(self) -> None:
+        raw_item = {
+            "title": "Novel origami pattern turns flat sheets into load-bearing 3D technology",
+            "summary": "Engineers developed a folding pattern that turns flexible sheets into stiff structures on demand.",
+            "niche_hint": "engineering visual explainer innovation",
+        }
+        classification = classify_topic(raw_item)
+        matches, suitability = match_pages(PROFILES, classification, raw_item)
+        matched_pages = [match["page_name"] for match in matches]
+
+        self.assertIn("engineering", classification["categories"])
+        self.assertIn("visual_explainer", classification["categories"])
+        self.assertIn("SuccessAddictives", matched_pages)
+        self.assertNotIn("CEOBeingCEO", matched_pages)
+        self.assertGreaterEqual(suitability["SuccessAddictives"], 5.0)
+
+        success_match = next(match for match in matches if match["page_name"] == "SuccessAddictives")
+        payload = build_angle(raw_item, classification, success_match)
+        self.assertIn("Engineering", payload["viral_title"])
+        self.assertIn("mechanism", payload["caption"].lower())
+        self.assertNotIn("future of work", payload["caption"].lower())
+        self.assertIn("How it works", payload["image_brief"]["possible_overlays"])
+        self.assertIn("engineering close-up", payload["suggested_image_keywords"])
+
     def test_title_casing_preserves_common_ai_branding(self) -> None:
         raw_item = {
             "title": "OpenAI launches API tools for AI agents",
