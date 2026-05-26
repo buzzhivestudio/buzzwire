@@ -112,6 +112,17 @@ class ModelProviderTest(unittest.TestCase):
                 self.assertIn("fallback", payload["risk_notes"].lower())
                 self.assertIn("Quiet", payload["viral_title"])
 
+    def test_api_provider_rejects_generic_title_overrides(self) -> None:
+        with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}, clear=False):
+            provider = OpenAIProvider()
+            with patch(
+                "buzzwire.services.llm.OpenAIProvider._complete",
+                return_value='{"viral_title": "This Story Is Bigger Than It Looks"}',
+            ):
+                payload = provider.generate_post(RAW_ITEM, CLASSIFICATION, PROFILE)
+                self.assertNotEqual(payload["viral_title"], "This Story Is Bigger Than It Looks")
+                self.assertIn("Quiet", payload["viral_title"])
+
 
 if __name__ == "__main__":
     unittest.main()

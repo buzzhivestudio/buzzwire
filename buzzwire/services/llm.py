@@ -26,6 +26,25 @@ REQUIRED_PAYLOAD_KEYS = {
     "confidence_score",
 }
 
+GENERIC_TITLE_PHRASES = {
+    "story story",
+    "story gets bigger",
+    "bigger than it looks",
+    "bigger than a normal headline",
+    "real business angle here",
+    "real geopolitics angle here",
+    "ai race ceos should be watching",
+    "this story is bigger",
+    "this could change everything",
+}
+
+
+def _generic_title(value: Any) -> bool:
+    title = str(value or "").strip().lower()
+    if not title:
+        return True
+    return any(phrase in title for phrase in GENERIC_TITLE_PHRASES)
+
 
 class ModelProvider(ABC):
     name: str
@@ -125,6 +144,9 @@ def _merge_payload(base: dict[str, Any], generated: dict[str, Any]) -> dict[str,
     for key in REQUIRED_PAYLOAD_KEYS:
         if key in generated and generated[key] not in (None, ""):
             merged[key] = generated[key]
+    for title_key in ("viral_title", "aggressive_title"):
+        if _generic_title(merged.get(title_key)):
+            merged[title_key] = base[title_key]
     merged["carousel_text"] = _as_string_list(merged.get("carousel_text")) or base["carousel_text"]
     merged["suggested_image_keywords"] = (
         _as_string_list(merged.get("suggested_image_keywords")) or base["suggested_image_keywords"]
@@ -161,9 +183,24 @@ def _prompt_for_angle(
     base: dict[str, Any],
     tone_override: str | None,
 ) -> str:
+    style_training_notes = ""
+    if profile.get("page_name") == "SuccessAddictives":
+        style_training_notes = (
+            "Use @wealth-style concrete hooks: exact names, numbers, dates, rankings, first-ever claims, "
+            "and visual facts. Good examples: 'WHEN DID THE WORLD LOSE ITS COLOR', "
+            "'THE RICHEST PEOPLE TO HAVE EVER LIVED', '2027 IS ALREADY SHAPING UP TO BE A MASSIVE YEAR FOR MOVIES', "
+            "'THE ENTIRE WORLD IS NOW $345 TRILLION IN DEBT'. Avoid generic titles like 'this story is bigger than it looks', "
+            "'story gets bigger', 'the real angle here', or vague AI/business placeholders."
+        )
+    elif profile.get("page_name") == "CEOBeingCEO":
+        style_training_notes = (
+            "Use source-specific executive hooks. Mention the company, CEO, deal, job, IPO, product, or money detail. "
+            "Avoid generic placeholders like 'the AI race CEOs should be watching' unless the source itself is about a specific AI race."
+        )
     context = {
         "task": "Turn a raw news item into a page-specific viral Instagram content angle.",
         "important_rule": "Do not make a generic summary. Make the angle fit the exact page profile.",
+        "style_training_notes": style_training_notes,
         "page_profile": {
             "page_name": profile.get("page_name"),
             "username": profile.get("username"),

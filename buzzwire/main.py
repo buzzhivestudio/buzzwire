@@ -18,7 +18,12 @@ from buzzwire.db import DatabaseIntegrityError, connect, initialize_database
 from buzzwire.exporters import export_approved_markdown, export_board_json
 from buzzwire.schemas import ApprovalNote, ManualTopic, PageProfilePayload, PostEdit, ToneChange
 from buzzwire.services.llm import provider_status
-from buzzwire.services.pipeline import fetch_and_process_rss, process_manual_topic, regenerate_post
+from buzzwire.services.pipeline import (
+    fetch_and_process_rss,
+    process_manual_topic,
+    regenerate_post,
+    regenerate_ready_posts,
+)
 from buzzwire.settings import DATABASE_URL, DB_PATH, STATIC_DIR
 
 
@@ -243,6 +248,12 @@ def fetch_rss(
     conn: Any = Depends(get_conn),
 ) -> dict:
     result = fetch_and_process_rss(conn, limit_per_source=limit_per_source)
+    return {"ok": True, **result}
+
+
+@app.post("/api/board/regenerate")
+def regenerate_board(limit: int = Query(default=100, ge=1, le=200), conn: Any = Depends(get_conn)) -> dict:
+    result = regenerate_ready_posts(conn, limit=limit)
     return {"ok": True, **result}
 
 

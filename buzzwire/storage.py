@@ -402,6 +402,7 @@ def update_generated_post_fields(conn: Any, post_id: int, fields: dict[str, Any]
         "suggested_image_keywords",
         "image_brief",
         "risk_notes",
+        "source_url",
         "confidence_score",
         "status",
         "tone_override",

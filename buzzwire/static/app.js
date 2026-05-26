@@ -658,6 +658,22 @@ document.querySelector("#fetch-rss").addEventListener("click", async () => {
   }
 });
 
+document.querySelector("#improve-board").addEventListener("click", async () => {
+  setStatus("Improving ready titles...");
+  try {
+    const result = await request("/api/board/regenerate?limit=100", { method: "POST" });
+    await loadBoard();
+    showToast("Ready Titles Improved", {
+      Updated: result.updated || 0,
+      Errors: result.errors?.length || 0,
+    }, Boolean(result.errors?.length));
+    setStatus(result.errors?.length ? "Some cards could not be regenerated." : "Ready titles improved.");
+  } catch (error) {
+    setStatus(error.message, true);
+    showToast("Improve Failed", { Error: error.message }, true);
+  }
+});
+
 document.querySelector("#refresh").addEventListener("click", async () => {
   setStatus("Refreshing...");
   try {

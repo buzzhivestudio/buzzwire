@@ -135,7 +135,8 @@ class PipelineHeuristicsTest(unittest.TestCase):
 
         success_match = next(match for match in matches if match["page_name"] == "SuccessAddictives")
         payload = build_angle(raw_item, classification, success_match)
-        self.assertIn("Culture", payload["viral_title"])
+        self.assertEqual(payload["viral_title"], "The Final Episode Of The Boys Will Be 65 Minutes Long")
+        self.assertNotIn("Bigger Than It Looks", payload["viral_title"])
         self.assertIn("visual fact", payload["caption"].lower())
         self.assertIn("yellow headline", payload["suggested_image_keywords"])
         self.assertIn("circle inset", payload["image_brief"]["possible_overlays"])
@@ -157,7 +158,11 @@ class PipelineHeuristicsTest(unittest.TestCase):
 
         success_match = next(match for match in matches if match["page_name"] == "SuccessAddictives")
         payload = build_angle(raw_item, classification, success_match)
-        self.assertIn("Global Debt", payload["viral_title"])
+        self.assertEqual(
+            payload["viral_title"],
+            "The Entire World Is Now $345 Trillion In Debt, The Highest In History",
+        )
+        self.assertNotIn("Bigger Than", payload["viral_title"])
         self.assertIn("source-led", payload["caption"].lower())
         self.assertIn("big number", payload["image_brief"]["possible_overlays"])
 

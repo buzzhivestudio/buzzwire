@@ -297,6 +297,20 @@ def _success_wealth_frame(raw_title: str, classification: dict[str, Any]) -> str
     return "curiosity"
 
 
+def _wealth_source_hook(raw_title: str) -> str:
+    title = clean_text(raw_title).strip(" .,:;-")
+    if not title:
+        return ""
+    title = re.sub(r"\s+-\s+[^-]{2,40}$", "", title).strip()
+    title = re.sub(r"\s+\|\s+.*$", "", title).strip()
+    title = re.sub(r"\s+according to\s+.*$", "", title, flags=re.I).strip()
+    title = re.sub(r"\s*,?\s+says\s+.*$", "", title, flags=re.I).strip()
+    title = re.sub(r"\s+", " ", title)
+    if len(title) > 105:
+        title = title[:105].rsplit(" ", 1)[0].strip(" .,:;-")
+    return title_case_soft(title)
+
+
 def _actor_from_title(title: str) -> str:
     title_lower = title.lower()
     actor_checks = [
@@ -1056,6 +1070,14 @@ def _success_wealth_titles(
     text = raw_title.lower()
     subject = _success_wealth_subject(raw_title, actor)
     frame = _success_wealth_frame(raw_title, classification)
+    source_hook = _wealth_source_hook(raw_title)
+    if source_hook:
+        aggressive_options = [
+            f"Why {subject} Is Getting So Much Attention",
+            f"The Detail That Makes {subject} Hard To Ignore",
+            f"What Makes This {frame.title()} Hook So Shareable",
+        ]
+        return source_hook, _rotate(aggressive_options, variant_hint)
 
     if re.search(r"\b(first|first-ever|first ever|first time|for the first time)\b", text):
         viral_options = [

@@ -170,3 +170,27 @@ def regenerate_post(
         fields["tone_override"] = effective_tone
     storage.update_generated_post_fields(conn, post_id, fields)
     return storage.get_generated_post_detail(conn, post_id)
+
+
+def regenerate_ready_posts(conn: Any, *, limit: int = 100) -> dict[str, Any]:
+    rows = conn.execute(
+        """
+        SELECT id
+        FROM generated_posts
+        WHERE status = 'generated'
+        ORDER BY updated_at DESC, created_at DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    updated: list[int] = []
+    errors: list[dict[str, Any]] = []
+    for row in rows:
+        post_id = int(row["id"])
+        try:
+            regenerate_post(conn, post_id, mode="all")
+        except Exception as exc:
+            errors.append({"post_id": post_id, "error": str(exc)[:180]})
+            continue
+        updated.append(post_id)
+    return {"updated": len(updated), "post_ids": updated, "errors": errors}
