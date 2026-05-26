@@ -87,6 +87,7 @@ SUCCESS_WEALTH_CATEGORIES = {
     "geopolitics",
     "culture",
     "entertainment",
+    "influencers",
     "sports",
     "history",
     "places",
@@ -97,6 +98,9 @@ SUCCESS_WEALTH_TERMS = {
     "olympics",
     "movie",
     "movies",
+    "hollywood",
+    "celebrity",
+    "box office",
     "film",
     "series",
     "episode",
@@ -109,6 +113,23 @@ SUCCESS_WEALTH_TERMS = {
     "drake",
     "michael jackson",
     "shakira",
+    "rihanna",
+    "taylor swift",
+    "beyonce",
+    "emmy",
+    "oscar",
+    "pewdiepie",
+    "mrbeast",
+    "marzia",
+    "youtube",
+    "youtuber",
+    "streamer",
+    "influencer",
+    "creator economy",
+    "family vlogs",
+    "followers",
+    "subscribers",
+    "privacy",
     "ronaldo",
     "messi",
     "gta",
@@ -147,6 +168,10 @@ SUCCESS_WEALTH_TERMS = {
     "most powerful",
     "insane",
     "before and after",
+    "digital detox",
+    "gen z",
+    "human-interest",
+    "wholesome",
 }
 
 
@@ -230,7 +255,24 @@ def _success_wealth_subject(raw_title: str, actor: str) -> str:
         ("olympics", "The Olympics"),
         ("doping", "The Pro-Doping Olympics"),
         ("drake", "Drake"),
+        ("pewdiepie", "PewDiePie"),
+        ("marzia", "PewDiePie And Marzia"),
+        ("mrbeast", "MrBeast"),
+        ("youtube", "YouTube"),
+        ("youtuber", "This YouTuber"),
+        ("streamer", "This Streamer"),
+        ("influencer", "This Influencer"),
+        ("creator economy", "The Creator Economy"),
+        ("family vlogs", "Family Vlogs"),
         ("michael jackson", "Michael Jackson"),
+        ("taylor swift", "Taylor Swift"),
+        ("rihanna", "Rihanna"),
+        ("beyonce", "Beyonce"),
+        ("emmy", "The Emmy Win"),
+        ("oscar", "The Oscars Story"),
+        ("hollywood", "Hollywood"),
+        ("box office", "The Box Office"),
+        ("movie lineup", "This Movie Lineup"),
         ("spotify", "Spotify"),
         ("netflix", "Netflix"),
         ("the boys", "The Boys Finale"),
@@ -263,6 +305,10 @@ def _success_wealth_subject(raw_title: str, actor: str) -> str:
         ("homes", "These Homes"),
         ("cats", "Japan's Cat Warning Signs"),
         ("animals", "Animals That Outlive Humans"),
+        ("digital detox", "The Digital Detox Trend"),
+        ("flip phones", "The Flip Phone Comeback"),
+        ("cost of living", "The Cost Of Living Gap"),
+        ("saved animals", "This Rescue Story"),
     ]
     for needle, subject in checks:
         if needle in text:
@@ -280,14 +326,18 @@ def _success_wealth_subject(raw_title: str, actor: str) -> str:
 def _success_wealth_frame(raw_title: str, classification: dict[str, Any]) -> str:
     text = raw_title.lower()
     categories = {str(category).lower() for category in classification.get("categories", [])}
-    if "money" in categories or any(term in text for term in ["richest", "debt", "trillion", "billion", "profit"]):
+    if "money" in categories or any(term in text for term in ["richest", "debt", "trillion", "billion", "profit", "net worth", "fortune"]):
         return "money"
+    if "influencers" in categories or any(term in text for term in ["pewdiepie", "mrbeast", "youtuber", "streamer", "influencer", "creator economy"]):
+        return "creator"
     if "geopolitics" in categories or any(term in text for term in ["china", "iran", "trump", "xi jinping", "countries"]):
         return "world"
     if "sports" in categories or any(term in text for term in ["world cup", "olympics", "fifa", "ronaldo", "messi"]):
         return "sports"
     if "entertainment" in categories:
         return "culture"
+    if "culture" in categories and any(term in text for term in ["gen z", "digital detox", "viral", "human-interest", "wholesome"]):
+        return "viral culture"
     if "history" in categories:
         return "history"
     if "places" in categories:
@@ -330,6 +380,16 @@ def _actor_from_title(title: str) -> str:
         ("direct flight", "Bihar's Air Route Push"),
         ("roblox", "Roblox"),
         ("ubisoft", "Ubisoft"),
+        ("pewdiepie", "PewDiePie"),
+        ("mrbeast", "MrBeast"),
+        ("marzia", "Marzia"),
+        ("kai cenat", "Kai Cenat"),
+        ("ishowspeed", "IShowSpeed"),
+        ("taylor swift", "Taylor Swift"),
+        ("rihanna", "Rihanna"),
+        ("beyonce", "Beyonce"),
+        ("kylie jenner", "Kylie Jenner"),
+        ("kim kardashian", "Kim Kardashian"),
     ]
     for needle, actor in actor_checks:
         if needle in title_lower:
@@ -370,6 +430,8 @@ def _topic_label(classification: dict[str, Any]) -> str:
         return "money"
     if "entertainment" in categories:
         return "entertainment"
+    if "influencers" in categories:
+        return "creator"
     if "sports" in categories:
         return "sports"
     if "history" in categories:
@@ -505,6 +567,19 @@ def _topic_signal(raw_title: str, classification: dict[str, Any]) -> str:
         ("solid-state", "Hardware"),
         ("3d printing", "Manufacturing"),
         ("world cup", "World Cup"),
+        ("pewdiepie", "Creator"),
+        ("mrbeast", "Creator"),
+        ("youtuber", "Creator"),
+        ("streamer", "Creator"),
+        ("influencer", "Creator"),
+        ("creator economy", "Creator Economy"),
+        ("family vlogs", "Privacy"),
+        ("followers", "Audience"),
+        ("subscribers", "Audience"),
+        ("hollywood", "Hollywood"),
+        ("box office", "Box Office"),
+        ("emmy", "Entertainment"),
+        ("oscar", "Entertainment"),
         ("olympics", "Olympics"),
         ("doping", "Sports Business"),
         ("movie", "Entertainment"),
@@ -542,7 +617,7 @@ def _topic_signal(raw_title: str, classification: dict[str, Any]) -> str:
         return "Workforce"
     if "geopolitics" in categories:
         return "Global Risk"
-    if categories.intersection({"entertainment", "sports", "history", "places", "money"}):
+    if categories.intersection({"entertainment", "influencers", "sports", "history", "places", "money"}):
         return "Viral Knowledge"
     if categories.intersection({"engineering", "visual_explainer", "innovation", "infrastructure"}):
         return "Engineering"
@@ -1101,7 +1176,18 @@ def _success_wealth_titles(
             f"The Detail That Makes {subject} Hard To Ignore",
             f"What Makes This {frame.title()} Story So Shareable",
         ]
-    elif frame == "culture":
+    elif frame == "creator":
+        viral_options = [
+            f"{subject} Just Became A Bigger Creator Story",
+            f"The {subject} Update Everyone Online Will Notice",
+            f"{subject} Is Turning Into A Creator-Economy Signal",
+        ]
+        aggressive_options = [
+            f"Why {subject} Is Getting So Much Attention",
+            f"The Creator Detail That Makes {subject} Bigger Than Gossip",
+            f"What {subject} Says About Fame, Privacy, And Attention",
+        ]
+    elif frame in {"culture", "viral culture"}:
         viral_options = [
             f"{subject} Just Became A Bigger Culture Story",
             f"The {subject} Update Everyone Will Be Talking About",
@@ -1434,10 +1520,14 @@ def _caption(
         if _is_success_wealth(raw_item.get("title", ""), classification):
             subject = _success_wealth_subject(raw_item.get("title", ""), actor)
             frame = _success_wealth_frame(raw_item.get("title", ""), classification)
+            title_text = raw_item.get("title", "").lower()
+            creator_reason = ""
+            if frame == "creator" and "privacy" in title_text:
+                creator_reason = " The emotional hook is privacy: choosing family boundaries over more attention."
             return (
                 f"{source_sentence} This works as a viral {frame} story because it has a clear visual, a recognizable hook, "
                 f"and one simple fact people can understand fast: {subject}. Keep the angle source-led, put the biggest name, "
-                "number, date, or visual contrast first, then explain why it feels surprising. "
+                f"number, date, or visual contrast first, then explain why it feels surprising.{creator_reason} "
                 f"{tone} The post should feel like a bold visual fact, not a long article."
             )
         success_topic = "business" if topic == "India" else topic

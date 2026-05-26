@@ -54,6 +54,22 @@ class FetcherRankingTest(unittest.TestCase):
             score_rss_item_for_success(politics, source),
         )
 
+    def test_creator_and_hollywood_sources_lift_public_milestones_not_gossip(self) -> None:
+        source = {"name": "Creator Feed", "niche": "influencers, YouTubers, creator economy, Hollywood"}
+        creator_milestone = {
+            "title": "PewDiePie and Marzia will end family vlogs to protect their son's privacy",
+            "summary": "The YouTuber said online content should be the child's choice later in life.",
+        }
+        gossip = {
+            "title": "Celebrity dating rumor splits fans online",
+            "summary": "A rumor about a relationship spread on social media.",
+        }
+
+        self.assertGreater(
+            score_rss_item_for_success(creator_milestone, source),
+            score_rss_item_for_success(gossip, source),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

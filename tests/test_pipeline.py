@@ -166,6 +166,28 @@ class PipelineHeuristicsTest(unittest.TestCase):
         self.assertIn("source-led", payload["caption"].lower())
         self.assertIn("big number", payload["image_brief"]["possible_overlays"])
 
+    def test_successaddictives_gets_creator_and_influencer_stories(self) -> None:
+        raw_item = {
+            "title": "PewDiePie and Marzia will end their family vlogs to protect their son Bjorn's privacy",
+            "summary": "The YouTuber said future online content should be his child's choice later in life.",
+            "niche_hint": "influencers YouTubers creator economy viral internet culture",
+        }
+        classification = classify_topic(raw_item)
+        matches, suitability = match_pages(PROFILES, classification, raw_item)
+        matched_pages = [match["page_name"] for match in matches]
+
+        self.assertIn("influencers", classification["categories"])
+        self.assertIn("SuccessAddictives", matched_pages)
+        self.assertNotIn("CEOBeingCEO", matched_pages)
+        self.assertGreaterEqual(suitability["SuccessAddictives"], 5.0)
+
+        success_match = next(match for match in matches if match["page_name"] == "SuccessAddictives")
+        payload = build_angle(raw_item, classification, success_match)
+        self.assertIn("PewDiePie", payload["viral_title"])
+        self.assertNotIn("Bigger Than It Looks", payload["viral_title"])
+        self.assertIn("creator", payload["caption"].lower())
+        self.assertIn("privacy", payload["caption"].lower())
+
     def test_title_casing_preserves_common_ai_branding(self) -> None:
         raw_item = {
             "title": "OpenAI launches API tools for AI agents",

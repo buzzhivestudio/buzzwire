@@ -42,6 +42,24 @@
     "enabled": true
   },
   {
+    "name": "Google News Hollywood & Celebrities",
+    "niche": "Hollywood, celebrities, movies, streaming, box office, music, viral culture",
+    "url": "https://news.google.com/rss/search?q=(Hollywood%20OR%20celebrity%20OR%20Netflix%20OR%20%22box%20office%22%20OR%20%22movie%20lineup%22%20OR%20%22music%20catalog%22)%20when%3A14d&hl=en-US&gl=US&ceid=US:en",
+    "enabled": true
+  },
+  {
+    "name": "Google News Creators & Influencers",
+    "niche": "influencers, YouTubers, streamers, creator economy, viral internet culture, public milestones",
+    "url": "https://news.google.com/rss/search?q=(PewDiePie%20OR%20MrBeast%20OR%20YouTuber%20OR%20TikToker%20OR%20influencer%20OR%20streamer%20OR%20%22creator%20economy%22)%20when%3A14d&hl=en-US&gl=US&ceid=US:en",
+    "enabled": true
+  },
+  {
+    "name": "Google News Pubity-Style Viral",
+    "niche": "viral human-interest, Gen Z trends, TikTok, strange facts, internet culture, wholesome stories",
+    "url": "https://news.google.com/rss/search?q=(viral%20OR%20%22Gen%20Z%22%20OR%20TikTok%20OR%20%22human%20interest%22%20OR%20%22weird%20fact%22%20OR%20%22digital%20detox%22)%20when%3A14d&hl=en-US&gl=US&ceid=US:en",
+    "enabled": true
+  },
+  {
     "name": "New Atlas Technology",
     "niche": "technology, engineering, innovation, gadgets, robotics, transport, visual explainer",
     "url": "https://newatlas.com/technology/index.rss",

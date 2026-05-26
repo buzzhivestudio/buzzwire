@@ -16,12 +16,16 @@ WEALTH_SIGNAL_TERMS = {
     "built",
     "cast",
     "ceo",
+    "celebrity",
     "china",
     "cities",
     "city",
     "countries",
+    "creator",
+    "creator economy",
     "debt",
     "drake",
+    "emmy",
     "episode",
     "ever",
     "ferrari",
@@ -32,27 +36,45 @@ WEALTH_SIGNAL_TERMS = {
     "gta",
     "highest",
     "highest in history",
+    "hollywood",
     "history",
+    "influencer",
+    "instagram",
     "iphone",
+    "ishowspeed",
     "japan",
+    "kai cenat",
+    "ksi",
     "longest",
+    "marzia",
     "mansion",
     "million",
+    "mrbeast",
     "most",
     "movie",
+    "movie lineup",
     "movies",
     "netflix",
     "olympics",
+    "oscar",
     "playstation",
+    "pewdiepie",
     "profit",
+    "privacy",
     "record",
     "richest",
     "ronaldo",
     "series",
+    "streamer",
+    "subscribers",
     "spotify",
+    "tiktok",
+    "tiktoker",
     "trillion",
     "trillionaire",
     "world cup",
+    "youtube",
+    "youtuber",
 }
 
 VISUAL_SIGNAL_TERMS = {
@@ -68,8 +90,10 @@ VISUAL_SIGNAL_TERMS = {
     "earth",
     "flying",
     "future",
+    "gen z",
     "homes",
     "how it works",
+    "human interest",
     "insane",
     "look like",
     "places",
@@ -77,6 +101,8 @@ VISUAL_SIGNAL_TERMS = {
     "robot",
     "space",
     "stole",
+    "viral",
+    "wholesome",
     "weird",
 }
 
@@ -92,6 +118,17 @@ WEAK_NEWS_TERMS = {
     "statement",
     "stock slips",
     "told reporters",
+}
+
+GOSSIP_ONLY_TERMS = {
+    "breakup",
+    "cheating",
+    "dating",
+    "divorce",
+    "feud",
+    "girlfriend",
+    "rumor",
+    "split",
 }
 
 ROUTINE_POLITICS_TERMS = {
@@ -131,9 +168,29 @@ def score_rss_item_for_success(raw_item: dict[str, Any], source: dict[str, Any])
     score += sum(0.55 for term in WEALTH_SIGNAL_TERMS if _contains_term(text, term))
     score += sum(0.45 for term in VISUAL_SIGNAL_TERMS if _contains_term(text, term))
     score -= sum(0.65 for term in WEAK_NEWS_TERMS if _contains_term(text, term))
+    if any(_contains_term(text, term) for term in GOSSIP_ONLY_TERMS) and not any(
+        _contains_term(text, term)
+        for term in {
+            "career",
+            "business",
+            "privacy",
+            "children",
+            "family",
+            "net worth",
+            "million",
+            "billion",
+            "record",
+            "launch",
+            "album",
+            "movie",
+        }
+    ):
+        score -= 2.0
 
     if any(term in source_niche for term in ("viral knowledge", "entertainment", "sports", "history", "places", "money")):
         score += 1.2
+    if any(term in source_niche for term in ("hollywood", "celebr", "influencer", "youtuber", "streamer", "creator", "pubity-style", "human-interest", "gen z", "internet culture")):
+        score += 1.6
     if any(term in source_niche for term in ("visual explainer", "engineering", "innovation", "future tech", "science")):
         score += 0.9
     if "india, national" in source_niche and any(_contains_term(text, term) for term in ROUTINE_POLITICS_TERMS):

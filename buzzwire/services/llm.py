@@ -186,11 +186,14 @@ def _prompt_for_angle(
     style_training_notes = ""
     if profile.get("page_name") == "SuccessAddictives":
         style_training_notes = (
-            "Use @wealth-style concrete hooks: exact names, numbers, dates, rankings, first-ever claims, "
-            "and visual facts. Good examples: 'WHEN DID THE WORLD LOSE ITS COLOR', "
+            "Use SuccessAddictives/Pubity/@wealth-style concrete hooks: exact names, numbers, dates, public creator moves, "
+            "celebrity career milestones, money/status signals, rankings, first-ever claims, and visual facts. "
+            "Good examples: 'PEWDIEPIE AND MARZIA WILL END THEIR FAMILY VLOGS TO PROTECT THEIR SON'S PRIVACY', "
+            "'ELON MUSK WILL LIKELY BECOME THE WORLD'S FIRST TRILLIONAIRE THIS YEAR', 'WHEN DID THE WORLD LOSE ITS COLOR', "
             "'THE RICHEST PEOPLE TO HAVE EVER LIVED', '2027 IS ALREADY SHAPING UP TO BE A MASSIVE YEAR FOR MOVIES', "
             "'THE ENTIRE WORLD IS NOW $345 TRILLION IN DEBT'. Avoid generic titles like 'this story is bigger than it looks', "
-            "'story gets bigger', 'the real angle here', or vague AI/business placeholders."
+            "'story gets bigger', 'the real angle here', or vague AI/business placeholders. Avoid cheap celebrity gossip; frame public "
+            "creator/celebrity stories as career, privacy, money, legacy, or culture signals."
         )
     elif profile.get("page_name") == "CEOBeingCEO":
         style_training_notes = (

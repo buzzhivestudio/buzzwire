@@ -18,11 +18,16 @@ KNOWN_CASING = {
     "imdb": "IMDb",
     "iphone": "iPhone",
     "it": "IT",
+    "ishowspeed": "IShowSpeed",
+    "mrbeast": "MrBeast",
     "openai": "OpenAI",
+    "pewdiepie": "PewDiePie",
+    "tiktok": "TikTok",
     "u.s": "U.S",
     "uk": "UK",
     "us": "US",
     "usa": "USA",
+    "youtube": "YouTube",
 }
 
 
