@@ -77,6 +77,23 @@ class PipelineHeuristicsTest(unittest.TestCase):
         self.assertLessEqual(payload["confidence_score"], 10)
         self.assertIn("composition", payload["image_brief"])
 
+    def test_entry_level_jobs_story_matches_business_pages(self) -> None:
+        raw_item = {
+            "title": "Next boss warns of 'dramatic' fall in entry-level jobs",
+            "summary": "A company boss warned that entry-level jobs are shrinking as businesses change hiring plans.",
+            "niche_hint": "",
+        }
+        classification = classify_topic(raw_item)
+        matches, suitability = match_pages(PROFILES, classification, raw_item)
+        matched_pages = [match["page_name"] for match in matches]
+
+        self.assertIn("business", classification["categories"])
+        self.assertIn("jobs", classification["categories"])
+        self.assertIn("fear", classification["emotional_triggers"])
+        self.assertIn("SuccessAddictives", matched_pages)
+        self.assertIn("CEOBeingCEO", matched_pages)
+        self.assertGreaterEqual(suitability["CEOBeingCEO"], 5.0)
+
     def test_title_casing_preserves_common_ai_branding(self) -> None:
         raw_item = {
             "title": "OpenAI launches API tools for AI agents",

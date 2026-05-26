@@ -26,7 +26,27 @@ BUSINESS_TEXT_TERMS = {
     "investment",
     "productivity",
     "workforce",
+    "boss",
+    "entry-level",
+    "entry level",
     "company",
+}
+
+JOB_MARKET_TERMS = {
+    "entry-level job",
+    "entry level job",
+    "graduate job",
+    "fall in jobs",
+    "job market",
+    "job losses",
+    "jobs decline",
+    "dramatic fall",
+    "hiring slowdown",
+    "layoff",
+    "layoffs",
+    "workforce",
+    "white collar",
+    "automation",
 }
 
 LOCAL_GOVERNMENT_TERMS = {
@@ -126,14 +146,23 @@ def score_profile(
         return 0.0
 
     virality = float(classification.get("virality_score", 1))
+    clear_business_signal = bool(categories.intersection(BUSINESS_CATEGORIES)) or any(
+        _contains_term(text, term) for term in BUSINESS_TEXT_TERMS
+    )
+    job_market_signal = "jobs" in categories and any(
+        _contains_term(text, term) for term in JOB_MARKET_TERMS
+    )
     if virality < 5.7 and "domestic_politics" not in categories:
-        return 0.0
+        lower_floor_business_story = (
+            page_name in BUSINESS_PAGE_NAMES
+            and virality >= 5.0
+            and (clear_business_signal or job_market_signal)
+        )
+        if not lower_floor_business_story:
+            return 0.0
 
     if page_name in BUSINESS_PAGE_NAMES:
-        has_business_signal = bool(categories.intersection(BUSINESS_CATEGORIES)) or any(
-            _contains_term(text, term) for term in BUSINESS_TEXT_TERMS
-        )
-        if not has_business_signal:
+        if not clear_business_signal:
             return 0.0
         local_government_story = any(_contains_term(text, term) for term in LOCAL_GOVERNMENT_TERMS)
         high_impact_business = any(_contains_term(text, term) for term in HIGH_IMPACT_BUSINESS_TERMS)
@@ -184,11 +213,17 @@ def score_profile(
         score += 2.6
     if any(_contains_term(text, term) for term in HIGH_IMPACT_BUSINESS_TERMS):
         score += 1.4
+    if page_name in BUSINESS_PAGE_NAMES and job_market_signal:
+        score += 1.4
     if page_name == "CEOBeingCEO" and any(
         _contains_term(text, term)
         for term in {"ipo", "trillionaire", "ai", "restructuring", "trade deal", "union recognition", "roblox"}
     ):
         score += 0.8
+    if page_name == "CEOBeingCEO" and job_market_signal and any(
+        _contains_term(text, term) for term in {"boss", "ceo", "executive", "leader", "manager"}
+    ):
+        score += 1.0
 
     score += virality / 5.0
     if risk_level == "medium" and risk_tolerance == "medium":
