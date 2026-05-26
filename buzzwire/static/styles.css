@@ -356,7 +356,7 @@ textarea {
 .board {
   grid-row: 5;
   display: grid;
-  grid-template-columns: repeat(6, minmax(230px, 1fr));
+  grid-template-columns: repeat(6, minmax(200px, 1fr));
   gap: 10px;
   align-items: stretch;
   overflow-x: auto;
@@ -369,7 +369,7 @@ textarea {
 }
 
 .board-column {
-  min-width: 230px;
+  min-width: 200px;
   min-height: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
